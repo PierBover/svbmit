@@ -1,3 +1,5 @@
+<p align="center"><img src="./graphics/svbmit-logo.svg" width="250"></p>
+
 # Svbmit
 
 This is a client-side form library for Svelte. It's in early developement so expect bugs, changes, and dragons.
