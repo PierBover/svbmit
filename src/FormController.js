@@ -375,8 +375,21 @@ export default class FormController {
 			input.classList.add(this.settings.validClass);
 		}
 
-		if (displayError && field.validationState === INVALID) {
-			if (this.settings.invalidClass) input.classList.add(this.settings.invalidClass);
+		if (
+			displayError &&
+			field.validationState === INVALID &&
+			this.settings.invalidClass &&
+			(
+				this.settings.addValidClassToAllInputs ||
+				(
+					field.type !== InputTypes.CHECKBOX &&
+					field.type !== InputTypes.RADIO &&
+					field.type !== InputTypes.SELECT_ONE &&
+					field.type !== InputTypes.SELECT_MULTIPLE
+				)
+			)
+		) {
+			input.classList.add(this.settings.invalidClass);
 		}
 	}
 
