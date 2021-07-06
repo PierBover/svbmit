@@ -100,9 +100,7 @@ The writable will be updated with information about the state of the form and it
 
 ## Displaying errors
 
-Although Svbmit knows at all times when a field is valid or invalid, you probably don't want to display errors all the time.
-
-There's nothing more annoying than getting an invalid email error when you haven't finished writing your email, right?
+Although Svbmit knows at all times when a field is valid or invalid, you probably don't want to display errors all the time. There's nothing more annoying than getting an invalid email error when you haven't finished writing your email, right?
 
 If you pass a `displayedErrors` writable to the controller, it will be updated at certain points in the validation flow:
 
@@ -120,9 +118,16 @@ const settings = {
 };
 ```
 
-By default, errors will be added to the `displayedErrors` writable when submitting the form and will be removed when the field's value changes.
+By default, errors will be added to the `displayedErrors` writable when submitting the form, and will be removed when the field's value changes. This can be customized:
 
-To customize this behavior, see the controller settings API.
+```js
+const controllerSettings = {
+  async onSubmit (values) {},
+  displayErrorsOnBlur: true,
+  displayErrorsOnChange: true,
+  hideErrorsOnChange: false
+}
+```
 
 It's up to you to decide how to implement the `displayedErrors` writable in your form. Here's a simple example of how you could do it:
 
@@ -131,7 +136,6 @@ It's up to you to decide how to implement the `displayedErrors` writable in your
   import {controller} from 'svbmit';
   import {writable} from 'svelte/store';
 
-  let emailIsValid, showEmailError;
   const displayedErrors = writable(null);
 
   const settings = {
@@ -157,9 +161,32 @@ See the [form with errors](demo-app/src/components/FormWithErrors.svelte) exampl
 
 Once a field is considered to be valid or invalid, and the error is deemed to be displayed, the input will be marked with a CSS class. By default these are `valid` and `invalid` but you can configure custom CSS class names (eg: `is-valid` and `is-invalid` if you're using Bootstrap).
 
+```js
+const controllerSettings = {
+  async onSubmit (values) {},
+  validClass: 'is-valid',
+  invalidClass: 'is-invalid'
+}
+```
+
 You can completely deactivate this behavior by using `null` for the `validClass` and/or `invalidClass` settings.
 
+```js
+const controllerSettings = {
+  async onSubmit (values) {},
+  validClass: null,
+  invalidClass: null
+}
+```
+
 The valid CSS class will not be applied to checkboxes, select, and radio inputs. You can change this behavior with the `addValidClassToAllInputs` setting.
+
+```js
+const controllerSettings = {
+  async onSubmit (values) {},
+  addValidClassToAllInputs: true
+}
+```
 
 ### Sync validators
 
@@ -268,7 +295,7 @@ Optional:
 * `controllerState` a [Svelte writable](https://svelte.dev/docs#svelte_store) that will be updated with the controller state
 * `displayErrorsOnBlur` display field errors on `blur` events. The default is `false`.
 * `displayErrorsOnChange` display field errors on `change` and `input` events. The default is `false`.
-* `hideErrorsOnChange` hide field errors on `change` and `input` events. The default is `false`.
+* `hideErrorsOnChange` hide field errors on `change` and `input` events. The default is `true`.
 * `addValidClassToAllInputs` add the `validClass` too all types of inputs. The default is `false`.
 
 ### Field settings
