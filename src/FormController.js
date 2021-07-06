@@ -265,7 +265,8 @@ export default class FormController {
 			const isDisplayingError = this.controllerState.fields[name].displayError;
 			const hideErrorsOnChange = this.settings.hideErrorsOnChange;
 
-			if (displayErrorOnChange || (isDisplayingError && hideErrorsOnChange === false)) fieldState.displayError = true;
+			if (hideErrorsOnChange) fieldState.displayError = false;
+			else if (displayErrorOnChange || isDisplayingError) fieldState.displayError = true;
 		}
 
 		fieldState.dirty = true;
