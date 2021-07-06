@@ -79,19 +79,19 @@ The writable will be updated with information about the state of the form and it
   validationState: "INVALID",
   fields: {
     email: {
-      dirty: false
-      error: "valueMissing"
-      name: "email"
-      type: "email"
-      validationState: "INVALID"
+      dirty: false,
+      error: "valueMissing",
+      name: "email",
+      type: "email",
+      validationState: "INVALID",
       value: ""
     },
     password: {
-      dirty: false
-      error: "valueMissing"
-      name: "password"
-      type: "password"
-      validationState: "INVALID"
+      dirty: false,
+      error: "valueMissing",
+      name: "password",
+      type: "password",
+      validationState: "INVALID",
       value: ""
     }
   }
@@ -104,11 +104,25 @@ Although Svbmit knows at all times when a field is valid or invalid, you probabl
 
 There's nothing more annoying than getting an invalid email error when you haven't finished writing your email, right?
 
-If you pass a `displayedErrors` writable to Svbmit, it will be updated at certain points in the validation flow. Errors will be added when submitting the form (if any fields are in an invalid state) and will be removed when the field's value changes.
+If you pass a `displayedErrors` writable to the controller, it will be updated at certain points in the validation flow:
+
+```js
+import {controller} from 'svbmit';
+import {writable} from 'svelte/store';
+
+const displayedErrors = writable(null);
+
+const settings = {
+  async onSubmit (values) {
+    console.log(values)
+  },
+  displayedErrors
+};
+```
+
+By default, errors will be added to the `displayedErrors` writable when submitting the form and will be removed when the field's value changes.
 
 To customize this behavior, see the controller settings API.
-
-When using external validation on a field (more about this later) Svbmit will ignore all its error displaying logic and you will have total control on when to display an error.
 
 It's up to you to decide how to implement the `displayedErrors` writable in your form. Here's a simple example of how you could do it:
 
