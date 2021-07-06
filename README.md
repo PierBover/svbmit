@@ -188,7 +188,7 @@ const controllerSettings = {
 }
 ```
 
-### Sync validators
+## Sync validators
 
 When configuring a field you can add any number of custom sync validators:
 
@@ -213,7 +213,7 @@ const formControllerSettings = {
 
 In your validator, return `true` if the value is valid. Anything other than `true` will mark the field as invalid, and whatever you return will be available in the `controllerState` and `displayedErrors` stores.
 
-### External validators
+## External validators
 
 You can add a per-field external validator which will have full control over the validation of a field:
 
