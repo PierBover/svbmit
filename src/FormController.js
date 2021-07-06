@@ -33,7 +33,7 @@ export default class FormController {
 		this.settings.displayErrorsOnBlur = getValueOrDefault(config.displayErrorsOnBlur, false);
 		this.settings.displayErrorsOnChange = getValueOrDefault(config.displayErrorsOnChange, false);
 		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, true);
-		this.settings.addValidClassToAllInputs = getValueOrDefault(config.hideErrorsOnChange, false);
+		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, false);
 
 		this.form = config.form;
 		this.form.addEventListener('submit', this.onSubmit);
