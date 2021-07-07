@@ -205,11 +205,11 @@ export default class FormController {
 		}
 
 		if (fieldSettings.validators) {
-			const error = validateValueWithValidators(value, fieldSettings.validators);
+			const result = validateValueWithValidators(value, fieldSettings.validators, this.controllerState);
 
-			if (error !== true) {
+			if (result !== true) {
 				fieldState.validationState = INVALID;
-				fieldState.error = error;
+				fieldState.error = result;
 				return fieldState;
 			}
 		}
@@ -454,15 +454,19 @@ function getValueOrDefault (value, defaultValue) {
 	else return defaultValue;
 }
 
-function validateValueWithValidators (value, validators) {
+function validateValueWithValidators (value, validators, controllerState) {
 	for (const validator of validators) {
 
 		if (validator.then) {
 			throw `Custom sync validators can't return a promise`;
 		}
 
-		return validator(value);
+		const result = validator(value, controllerState);
+
+		if (result !== true) return result;
 	}
+
+	return true;
 }
 
 function parseInputName (name) {
