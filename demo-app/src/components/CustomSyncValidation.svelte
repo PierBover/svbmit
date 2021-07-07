@@ -1,5 +1,5 @@
 <script>
-	import {controller, NativeValidationErrors, ValidationStates} from 'pluma-svelte-forms';
+	import {controller, NativeValidationErrors, ValidationStates} from 'svbmit';
 	import {writable} from 'svelte/store';
 	import {checkPassword} from '../utils.js';
 

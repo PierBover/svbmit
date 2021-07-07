@@ -52,7 +52,7 @@ export default {
 		commonjs(),
 		alias({
 			entries: [
-				{ find: 'pluma-svelte-forms', replacement: path.resolve(__dirname, '../src') }
+				{ find: 'svbmit', replacement: path.resolve(__dirname, '../src') }
 			]
 		}),
 		!production && serve(),

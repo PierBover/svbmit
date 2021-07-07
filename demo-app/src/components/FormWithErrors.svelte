@@ -1,5 +1,5 @@
 <script>
-	import {controller} from 'pluma-svelte-forms';
+	import {controller} from 'svbmit';
 	import {writable} from 'svelte/store';
 
 	let submittedValues, emailIsValid, passwordIsValid, showEmailError, showPasswordError, showAcceptError;
