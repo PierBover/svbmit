@@ -118,16 +118,16 @@ const settings = {
 };
 ```
 
-By default, errors will be added to the `displayedErrors` writable when submitting the form, and will be removed when the field's value changes. This can be customized:
+By default, errors will be added to the `displayedErrors` writable after submitting the form. This behavior can be customized per form, or per field, with the `displayErrorsOn` setting.
 
 ```js
 const controllerSettings = {
   async onSubmit (values) {},
-  displayErrorsOnBlur: true,
-  displayErrorsOnChange: true,
-  hideErrorsOnChange: false
+  displayErrorsOn: 'INSTANT'
 }
 ```
+
+See the [API](#api) for more details on this.
 
 It's up to you to decide how to implement the `displayedErrors` writable in your form. Here's a simple example of how you could do it:
 
@@ -281,7 +281,9 @@ Now all those inputs will use the `productName` settings, but will be treated as
 
 See the [dynamic form with custom validation demo](demo-app/src/components/DynamicFormWithCustomValidation.svelte) for a full example on how to use aliases.
 
-## `controller` action settings
+## API
+
+### `controller` action settings
 
 Required:
 * `onSubmit` a callback function that will be triggered when all validation has passed and the form is submitted.
@@ -293,13 +295,18 @@ Optional:
 * `useNativeErrorTooltips` use the browser's error tooltips. Defaults to `false`.
 * `displayedErrors` a [Svelte writable](https://svelte.dev/docs#svelte_store) that will be updated with displayed errors
 * `controllerState` a [Svelte writable](https://svelte.dev/docs#svelte_store) that will be updated with the controller state
-* `displayErrorsOnBlur` display field errors on `blur` events. The default is `false`.
-* `displayErrorsOnChange` display field errors on `change` and `input` events. The default is `false`.
-* `hideErrorsOnChange` hide field errors on `change` and `input` events. The default is `true`.
+* `displayErrorsOn` determine when to display field errors:
+  * `SUBMIT` errors will be displayed after the form `submit` event. This is the default value.
+  * `INSTANT` errors will be displayed after the `input` event.
+  * `BLUR` errors will be displayed after the `blur` event.
+* `hideErrorsOnChange` hide field errors on `change` and `input` events. The default is `false`.
 * `addValidClassToAllInputs` add the `validClass` too all types of inputs. The default is `false`.
 
-### Field settings
+#### Field settings
 All optional:
 * `validators` an array with sync functions that will be used to validate the value of the field after the native validators have passed.
 * `externalValidator` a sync function that will be used for all validation. When using this option, no validation will be performed by the library itself.
-* `displayErrorsOnChange` show field errors on `input` and `change` events. The default is `false`.
+* `displayErrorsOn` determine when to display errors for this particular field and has preference over the main form setting:
+  * `SUBMIT` errors will be displayed after the form `submit` event.
+  * `INSTANT` errors will be displayed after the `input` event.
+  * `BLUR` errors will be displayed after the `blur` event.

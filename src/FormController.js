@@ -1,5 +1,4 @@
-import {writable, get} from 'svelte/store';
-import {InputTypes, NativeValidationErrors, ValidationStates, FormStates} from './enums/index.js';
+import {InputTypes, NativeValidationErrors, ValidationStates, DisplayErrorsOn} from './enums/index.js';
 
 const {VALID, INVALID, PENDING} = ValidationStates;
 
@@ -9,7 +8,9 @@ export default class FormController {
 		if (!config.onSubmit) throw 'You need to add an onSubmit callback';
 
 		this.controllerState = {
-			validationState: FormStates.PENDING,
+			form: {
+				validationState: ValidationStates.PENDING,
+			},
 			fields: {}
 		};
 
@@ -30,9 +31,8 @@ export default class FormController {
 		this.settings.useNativeErrorTooltips = getValueOrDefault(config.useNativeErrorTooltips, false);
 		this.settings.validClass = getValueOrDefault(config.validClass, 'valid');
 		this.settings.invalidClass = getValueOrDefault(config.invalidClass, 'invalid');
-		this.settings.displayErrorsOnBlur = getValueOrDefault(config.displayErrorsOnBlur, false);
-		this.settings.displayErrorsOnChange = getValueOrDefault(config.displayErrorsOnChange, false);
-		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, true);
+		this.settings.displayErrorsOn = getValueOrDefault(config.displayErrorsOn, DisplayErrorsOn.SUBMIT);
+		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, false);
 		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, false);
 
 		this.form = config.form;
@@ -108,7 +108,6 @@ export default class FormController {
 	}
 
 	triggerOnSubmit () {
-		this.controllerState.validationState = FormStates.SUBMITTED;
 		const values = getValuesFromState(this.controllerState);
 		this.settings.onSubmit(values);
 		this.updateStores();
@@ -158,23 +157,26 @@ export default class FormController {
 	updateControllerState () {
 		const controllerState = this.controllerState;
 
-		const previousState = controllerState.validationState;
-		let nextState = FormStates.VALID;
+		let formValidationState = ValidationStates.PENDING;
 
+		// Add field state to controllerState
 		Object.keys(controllerState.fields).forEach((fieldName) => {
 			const field = controllerState.fields[fieldName];
 
-			// We're giving a PENDING state priority over INVALID
-			if (nextState === FormStates.PENDING) return;
-			if (!field.validationState || field.validationState === ValidationStates.PENDING) nextState = FormStates.PENDING;
-			if (field.validationState === ValidationStates.INVALID) nextState = FormStates.INVALID;
+			// Set the form validation state
+			switch (field.validationState) {
+				case ValidationStates.INVALID:
+					formValidationState = ValidationStates.INVALID;
+					break;
+				case ValidationStates.VALID:
+					if (formValidationState === ValidationStates.PENDING) {
+						formValidationState = ValidationStates.VALID;
+					}
+					break;
+			}
 		});
 
-		if (previousState === FormStates.SUBMITTED_PENDING && nextState === FormStates.PENDING) {
-			controllerState.validationState = FormStates.SUBMITTED_PENDING;
-		} else {
-			controllerState.validationState = nextState;
-		}
+		controllerState.form.validationState = formValidationState;
 
 		this.controllerState = controllerState;
 	}
@@ -236,8 +238,8 @@ export default class FormController {
 
 			field.dirty = true;
 
-			if (field.validationState === INVALID) field.displayError = true;
 			if (fieldSettings.externalValidator) this.triggerExternalValidationForField(name, event);
+			else field.displayError = true;
 		});
 
 		this.updateControllerState();
@@ -245,11 +247,7 @@ export default class FormController {
 		this.updateCSSClassesForAllInputs();
 		this.updateStores();
 
-		if (this.controllerState.validationState === FormStates.PENDING) {
-			this.controllerState.validationState = FormStates.SUBMITTED_PENDING;
-		}
-
-		if (this.controllerState.validationState === FormStates.VALID) this.triggerOnSubmit();
+		if (this.controllerState.form.validationState === ValidationStates.VALID) this.triggerOnSubmit();
 	}
 
 	onInput (event) {
@@ -260,13 +258,12 @@ export default class FormController {
 		const isInvalid = fieldState.validationState === INVALID;
 		const hasExternalValidator = typeof fieldSettings.externalValidator !== 'undefined';
 
-		if (!hasExternalValidator && isInvalid) {
-			const displayErrorOnChange = this.settings.displayErrorsOnChange || fieldSettings.displayErrorsOnChange;
-			const isDisplayingError = this.controllerState.fields[name].displayError;
+		if (!hasExternalValidator) {
+			const displayErrorOn = fieldSettings.displayErrorsOn || this.settings.displayErrorsOn;
 			const hideErrorsOnChange = this.settings.hideErrorsOnChange;
 
 			if (hideErrorsOnChange) fieldState.displayError = false;
-			else if (displayErrorOnChange || isDisplayingError) fieldState.displayError = true;
+			else if (displayErrorOn === DisplayErrorsOn.INSTANT) fieldState.displayError = true;
 		}
 
 		fieldState.dirty = true;
@@ -289,12 +286,11 @@ export default class FormController {
 		const isInvalid = fieldState.validationState === INVALID;
 		const hasExternalValidator = typeof fieldSettings.externalValidator !== 'undefined';
 
-		if (!hasExternalValidator && isInvalid) {
-			const isDisplayingError = this.controllerState.fields[name].displayError;
-
-			if (!isDisplayingError && this.settings.displayErrorsOnBlur) {
-				fieldState.displayError = true;
-			}
+		if (
+			!hasExternalValidator &&
+			this.settings.displayErrorsOn === DisplayErrorsOn.BLUR
+		) {
+			fieldState.displayError = true;
 		}
 
 		this.updateFieldState(name, fieldState);
@@ -336,15 +332,13 @@ export default class FormController {
 			fieldState.error = updateState.error || null;
 			fieldState.displayError = updateState.displayError;
 
-			const previousState = this.controllerState.validationState;
-
 			this.updateFieldState(name, fieldState);
 			this.updateControllerState();
 			this.updateDisplayedErrors();
 			this.updateCSSClassesForAllInputs();
 			this.updateStores();
 
-			if (this.controllerState.validationState === FormStates.VALID && previousState === FormStates.SUBMITTED_PENDING) {
+			if (this.controllerState.form.validationState === ValidationStates.VALID) {
 				this.triggerOnSubmit();
 			}
 		}

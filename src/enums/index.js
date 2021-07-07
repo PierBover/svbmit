@@ -24,10 +24,8 @@ export const ValidationStates = {
 	PENDING: 'PENDING'
 }
 
-export const FormStates = {
-	VALID: 'VALID',
-	INVALID: 'INVALID',
-	PENDING: 'PENDING',
-	SUBMITTED_PENDING: 'SUBMITTED_PENDING',
-	SUBMITTED: 'SUBMITTED'
+export const DisplayErrorsOn = {
+	INSTANT: 'INSTANT',
+	SUBMIT: 'SUBMIT',
+	BLUR: 'BLUR'
 }
