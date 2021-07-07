@@ -72,37 +72,15 @@ To get a better understanding of what's going on, we can pass an optional `writa
 </form>
 ```
 
-The writable will be updated with information about the state of the form and its fields:
-
-```js
-{
-  validationState: "INVALID",
-  fields: {
-    email: {
-      dirty: false,
-      error: "valueMissing",
-      name: "email",
-      type: "email",
-      validationState: "INVALID",
-      value: ""
-    },
-    password: {
-      dirty: false,
-      error: "valueMissing",
-      name: "password",
-      type: "password",
-      validationState: "INVALID",
-      value: ""
-    }
-  }
-}
-```
+The writable will be updated with information about the state of the form and its fields. [Check the demo app](https://svbmit.netlify.app/) to get a sense of the information included there.
 
 ## Displaying errors
 
-Although Svbmit knows at all times when a field is valid or invalid, you probably don't want to display errors all the time. There's nothing more annoying than getting an invalid email error when you haven't finished writing your email, right?
+Svbmit knows at all times when a field is valid or invalid. This allows it to give you a truthful validation state of the whole form at all times so you can, for example, block the submit button until all fields are valid.
 
-If you pass a `displayedErrors` writable to the controller, it will be updated at certain points in the validation flow:
+The thing is you probably don't want to display errors all the time. There's nothing more annoying than getting an invalid email error when you haven't finished writing your email, right?
+
+If you pass a `displayedErrors` writable to the controller, it will be updated with the displayed errors at certain points in the validation flow:
 
 ```js
 import {controller} from 'svbmit';
@@ -117,17 +95,6 @@ const settings = {
   displayedErrors
 };
 ```
-
-By default, errors will be added to the `displayedErrors` writable after submitting the form. This behavior can be customized per form, or per field, with the `displayErrorsOn` setting.
-
-```js
-const controllerSettings = {
-  async onSubmit (values) {},
-  displayErrorsOn: 'INSTANT'
-}
-```
-
-See the [API](#api) for more details on this.
 
 It's up to you to decide how to implement the `displayedErrors` writable in your form. Here's a simple example of how you could do it:
 
@@ -156,6 +123,19 @@ It's up to you to decide how to implement the `displayedErrors` writable in your
 ```
 
 See the [form with errors](demo-app/src/components/FormWithErrors.svelte) example from the demo app for a more complex implementation.
+
+### When are errors displayed?
+
+By default, errors will be added to the `displayedErrors` writable after submitting the form. This behavior can be customized per form, or per field, with the `displayErrorsOn` setting.
+
+```js
+const controllerSettings = {
+  async onSubmit (values) {},
+  displayErrorsOn: 'INSTANT'
+}
+```
+
+See the [API](#api) for more details on this.
 
 ### Valid and invalid CSS classes
 
