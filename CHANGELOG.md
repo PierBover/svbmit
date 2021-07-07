@@ -1,3 +1,14 @@
+# 0.2.0
+
+Updates to form state and displayed errors.
+
+Breaking changes:
+* Deleted `displayErrorsOnBlur` and `displayErrorsOnChange` from controller settings
+* Deleted `FormStates` enum.
+
+New features:
+* Added `displayErrorsOn` to contoller and field settings to have better controller of when to display errors.
+
 # 0.1.1
 
 Some bug fixes.
