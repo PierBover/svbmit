@@ -369,7 +369,7 @@ export default class FormController {
 				(
 					field.type !== InputTypes.CHECKBOX &&
 					field.type !== InputTypes.RADIO &&
-					field.type !== InputTypes.SELECT_ONE &&
+					field.type !== InputTypes.SELECT &&
 					field.type !== InputTypes.SELECT_MULTIPLE
 				)
 			)

@@ -2,7 +2,7 @@ export const InputTypes = {
 	SUBMIT: 'submit',
 	CHECKBOX: 'checkbox',
 	RADIO: 'radio',
-	SELECT_ONE: 'select-one',
+	SELECT: 'select',
 	SELECT_MULTIPLE: 'select-multiple'
 }
 
