@@ -1,3 +1,9 @@
+# 0.3.0
+
+New features:
+* Settings for error messages
+* Improvements to custom validators
+
 # 0.2.0
 
 Updates to form state and displayed errors.
