@@ -34,6 +34,7 @@ export default class FormController {
 		this.settings.displayErrorsOn = getValueOrDefault(config.displayErrorsOn, DisplayErrorsOn.SUBMIT);
 		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, false);
 		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, false);
+		this.settings.errorMessages = config.errorMessages || {};
 
 		this.form = config.form;
 		this.form.addEventListener('submit', this.onSubmit);
@@ -184,6 +185,12 @@ export default class FormController {
 	updateFieldState (name, updateState) {
 		const previousState = this.controllerState.fields[name] || {};
 		const newState = Object.assign(previousState, updateState);
+
+		// Add custom error messages
+		if (newState.error && this.settings.errorMessages[newState.error]) {
+			newState.error = this.settings.errorMessages[newState.error];
+		}
+
 		this.controllerState.fields[name] = newState;
 	}
 
@@ -193,6 +200,7 @@ export default class FormController {
 		const fieldState = {name, value, type, alias};
 		const fieldSettings = this.settings.fields[alias] || {};
 
+		// External validation overrides all other validations
 		if (fieldSettings.externalValidator) {
 			fieldState.validationState = PENDING;
 			return fieldState;
