@@ -290,8 +290,7 @@ export default class FormController {
 	onBlur (event) {
 		const {name, alias} = parseInputName(event.target.name);
 		const fieldSettings = this.settings.fields[alias] || {};
-		const fieldState = getInputState(event.target);
-		const isInvalid = fieldState.validationState === INVALID;
+		const fieldState = this.getFieldStateFromInput(event.target);
 		const hasExternalValidator = typeof fieldSettings.externalValidator !== 'undefined';
 
 		if (
