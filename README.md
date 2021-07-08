@@ -122,7 +122,7 @@ It's up to you to decide how to implement the `displayedErrors` writable in your
 </form>
 ```
 
-See the [form with errors](demo-app/src/components/FormWithErrors.svelte) example from the demo app for a more complex implementation.
+See the [form with errors](demo-app/src/components/FormWithErrors.svelte) example for a more complex implementation.
 
 ### When are errors displayed?
 
@@ -136,6 +136,44 @@ const controllerSettings = {
 ```
 
 See the [API](#api) for more details on this.
+
+### Error messages
+
+By default, the error returned in the `displayedErrors` writable will be based on the [native error returned by the browser](https://developer.mozilla.org/en-US/docs/Web/API/ValidityState).
+
+* A missing required value will return `valueMissing`.
+* A bad email will return `typeMismatch`.
+* Etc.
+
+See the complete list in [the API docs](#native-validation-codes).
+
+You can customize this messages by adding the `errorMessages` object to the controller settings:
+
+```js
+const controllerSettings = {
+  async onSubmit (values) {},
+  errorMessages: {
+    valueMissing: 'This field is required'
+  }
+}
+```
+
+Another approach can be to compared the error with the [`NativeValidationErrors`](src/enums/index.js) enum and then simply decide what error to show on a per field basis:
+
+```svelte
+<input type="email" name="email" required>
+{#if $displayedErrors.email === NativeValidationErrors.VALUE_MISSING}
+  <div>The email is required</div>
+{:else if $displayedErrors.email === NativeValidationErrors.TYPE_MISMATCH}
+  <div>Please write a valid email</div>
+{:else}
+  <div>Looks good!</div>
+{/if}
+```
+
+See the [form with errors](demo-app/src/components/FormWithErrors.svelte) example for a more complex implementation.
+
+If you're implementing [custom validators](#custom-validators) or [external validators](#external-validators), you will have total control over what error message to return.
 
 ### Valid and invalid CSS classes
 
@@ -168,9 +206,9 @@ const controllerSettings = {
 }
 ```
 
-## Sync validators
+## Custom validators
 
-When configuring a field you can add any number of custom sync validators:
+When configuring a field you can add any number of custom sync validators. Your validator will receive the latest value of the field in question:
 
 ```js
 function isAllCaps (value) {
@@ -191,7 +229,24 @@ const formControllerSettings = {
 }
 ```
 
-In your validator, return `true` if the value is valid. Anything other than `true` will mark the field as invalid, and whatever you return will be available in the `controllerState` and `displayedErrors` stores.
+In your validator, return `true` if the value is valid. Anything other than `true` will mark the field as invalid. Whatever you return will be available in the `controllerState` and `displayedErrors` stores.
+
+Your validator will receive the state of the controller on its second parameter so you can do validations based on other fields:
+
+```js
+function samePassword (value, controlletState) {
+  return value === controllerState.fields.password.value;
+}
+
+const formControllerSettings = {
+  async onSubmit (values) {},
+  fields: {
+    confirmPassword: {
+      validators: [samePassword]
+    }
+  }
+}
+```
 
 ## External validators
 
@@ -281,8 +336,9 @@ Optional:
   * `BLUR` errors will be displayed after the `blur` event.
 * `hideErrorsOnChange` hide field errors on `change` and `input` events. The default is `false`.
 * `addValidClassToAllInputs` add the `validClass` too all types of inputs. The default is `false`.
+* `errorMessages` and object to customize error messages.
 
-#### Field settings
+### Field settings
 All optional:
 * `validators` an array with sync functions that will be used to validate the value of the field after the native validators have passed.
 * `externalValidator` a sync function that will be used for all validation. When using this option, no validation will be performed by the library itself.
@@ -290,3 +346,18 @@ All optional:
   * `SUBMIT` errors will be displayed after the form `submit` event.
   * `INSTANT` errors will be displayed after the `input` event.
   * `BLUR` errors will be displayed after the `blur` event.
+
+### Native validation codes
+```
+export const NativeValidationErrors = {
+	BAD_INPUT: 'badInput',
+	PATTERN_MISMATCH: 'patternMismatch',
+	RANGE_OVERFLOW: 'rangeOverflow',
+	RANGE_UNDERFLOW: 'rangeUnderflow',
+	STEP_MISMATCH: 'stepMismatch',
+	TOO_LONG: 'tooLong',
+	TOO_SHORT: 'tooShort',
+	TYPE_MISMATCH: 'typeMismatch',
+	VALUE_MISSING: 'valueMissing'
+}
+```
