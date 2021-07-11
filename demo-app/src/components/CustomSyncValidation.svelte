@@ -1,14 +1,26 @@
 <script>
-	import {controller, NativeValidationErrors, ValidationStates} from 'svbmit';
+	import {controller, NativeValidationErrors, DisplayErrorsOn} from 'svbmit';
 	import {writable} from 'svelte/store';
-	import {checkPassword} from '../utils.js';
 
-	const {VALID, INVALID, PENDING} = ValidationStates;
+	const {VALUE_MISSING, TOO_SHORT} = NativeValidationErrors;
 
-	let submittedValues, passwordError, passwordValidationState;
+	let submittedValues;
 
-	const displayedErrors = writable(null);
+	const displayedErrors = writable({});
 	const controllerState = writable(null);
+
+	const regexNumbers = /[0-9]/;
+	const regexUppercase = /[A-Z]/;
+
+	export function checkPassword (value) {
+		const testNumbers = regexNumbers.test(value);
+		const testUppercase = regexUppercase.test(value);
+
+		if (testNumbers && testUppercase) return true;
+		if (!testUppercase && !testNumbers) return 'Please include at least a number and an uppercase letter';
+		if (testNumbers && !testUppercase) return 'Please include at least an uppercase letter';
+		if (!testNumbers && testUppercase) return 'Please include at least a number';
+	}
 
 	const formControllerSettings = {
 		async onSubmit (values) {
@@ -18,17 +30,13 @@
 		invalidClass: 'is-invalid',
 		displayedErrors,
 		controllerState,
+		displayErrorsOn: DisplayErrorsOn.INSTANT,
 		fields: {
 			password: {
 				validators: [checkPassword],
 				displayErrorsOnChange: true
 			}
 		}
-	}
-
-	$: {
-		passwordError = $displayedErrors?.password;
-		passwordValidationState = $controllerState?.fields.password.validationState;
 	}
 
 </script>
@@ -41,16 +49,14 @@
 			<label for="exampleInputPassword1" class="form-label">Password</label>
 			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="12">
 
-			{#if passwordValidationState === VALID}
+			{#if !$displayedErrors.password}
 				<div class="valid-feedback">Looking good!</div>
-			{:else if !passwordError}
-				<div class="form-text">Long password with at least a number and an uppercase letter</div>
-			{:else if passwordError == NativeValidationErrors.VALUE_MISSING}
+			{:else if $displayedErrors.password === VALUE_MISSING}
 				<div class="invalid-feedback">Please write a password</div>
-			{:else if passwordError == NativeValidationErrors.TOO_SHORT}
+			{:else if $displayedErrors.password === TOO_SHORT}
 				<div class="invalid-feedback">Your password must be at least 12 characters long</div>
 			{:else}
-				<div class="invalid-feedback">{passwordError}</div>
+				<div class="invalid-feedback">{$displayedErrors.password}</div>
 			{/if}
 
 		</div>

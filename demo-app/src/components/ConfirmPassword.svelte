@@ -1,15 +1,17 @@
 <script>
-	import {controller} from 'svbmit';
+	import {controller, NativeValidationErrors, DisplayErrorsOn} from 'svbmit';
 	import {writable} from 'svelte/store';
 
-	let submittedValues, confirmPasswordError;
+	const {VALUE_MISSING, TOO_SHORT} = NativeValidationErrors;
+
+	let submittedValues;
 
 	const controllerState = writable(null);
 	const displayedErrors = writable({});
 
 	function samePassword (value, controllerState) {
 		if (value === controllerState.fields.password.value) return true;
-		return 'Not same password!';
+		return 'Not the same password!';
 	}
 
 	const settings = {
@@ -20,31 +22,33 @@
 		invalidClass: 'is-invalid',
 		controllerState,
 		displayedErrors,
+		displayErrorsOn: DisplayErrorsOn.INSTANT,
 		fields: {
 			confirmPassword: {
 				validators: [samePassword]
 			}
 		},
 		errorMessages: {
-			valueMissing: 'This field is required'
+			[VALUE_MISSING]: 'This field is required',
+			[TOO_SHORT]: 'The password must be at least 5 characters'
 		}
 	}
 </script>
 
 <div class="wrap">
-	<h1 class="mb-4">Basic form</h1>
+	<h1 class="mb-4">Confirm password</h1>
 
 	<form use:controller={settings} class="mb-5" autocomplete="off">
 		<div class="mb-3">
 			<label for="input-password" class="form-label">Password</label>
-			<input type="password" name="password" class="form-control" id="input-password" required>
+			<input type="password" name="password" class="form-control" id="input-password" required minlength="5">
 			{#if $displayedErrors.password}
 				<div class="invalid-feedback">{$displayedErrors.password}</div>
 			{/if}
 		</div>
 		<div class="mb-3">
 			<label for="input-confirm-password" class="form-label">Confirm password</label>
-			<input type="password" name="confirmPassword" class="form-control" id="input-confirm-password" required>
+			<input type="password" name="confirmPassword" class="form-control" id="input-confirm-password" required minlength="5">
 			{#if $displayedErrors.confirmPassword}
 				<div class="invalid-feedback">{$displayedErrors.confirmPassword}</div>
 			{/if}

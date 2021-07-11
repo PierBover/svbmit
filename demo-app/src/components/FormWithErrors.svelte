@@ -1,8 +1,8 @@
 <script>
-	import {controller, NativeValidationErrors} from 'svbmit';
+	import {controller, NativeValidationErrors, DisplayErrorsOn} from 'svbmit';
 	import {writable} from 'svelte/store';
 
-	const {VALUE_MISSING, TYPE_MISMATCH} = NativeValidationErrors;
+	const {VALUE_MISSING, TYPE_MISMATCH, TOO_SHORT} = NativeValidationErrors;
 
 	let submittedValues;
 
@@ -16,7 +16,8 @@
 		validClass: 'is-valid',
 		invalidClass: 'is-invalid',
 		displayedErrors,
-		controllerState
+		controllerState,
+		displayErrorsOn: DisplayErrorsOn.INSTANT
 	}
 </script>
 
@@ -37,9 +38,11 @@
 		</div>
 		<div class="mb-3">
 			<label for="exampleInputPassword1" class="form-label">Password</label>
-			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required>
-			{#if $displayedErrors.password}
-				<div class="invalid-feedback">The password is required</div>
+			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="5">
+			{#if $displayedErrors.password === VALUE_MISSING}
+			<div class="invalid-feedback">The password is required</div>
+			{:else if $displayedErrors.password === TOO_SHORT}
+				<div class="invalid-feedback">Password must be at least 5 characters long</div>
 			{:else}
 				<div class="valid-feedback">Looks good!</div>
 			{/if}

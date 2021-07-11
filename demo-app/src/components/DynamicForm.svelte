@@ -4,12 +4,8 @@
 
 	let submittedValues;
 
-	let showReasons = false;
-	let showCustomReason = false;
-
-	const displayedErrors = writable(null);
-	const controllerState = writable(null);
-
+	const displayedErrors = writable({});
+	const controllerState = writable({});
 
 	const settings = {
 		async onSubmit (values) {
@@ -19,16 +15,6 @@
 		invalidClass: 'is-invalid',
 		displayedErrors,
 		controllerState
-	}
-
-	$: {
-		if ($controllerState?.fields.agree.value) {
-			showReasons = true;
-		}
-
-		if ($controllerState?.fields.reason?.value === 'custom') {
-			showCustomReason = true;
-		}
 	}
 
 </script>
@@ -49,7 +35,7 @@
 			</div>
 		</div>
 
-		{#if showReasons}
+		{#if $controllerState.fields?.agree.value}
 			<div class="mb-4">
 				<h4 class="mb-2">Why?</h4>
 				<select class="form-select" name="reason" required>
@@ -61,7 +47,7 @@
 			</div>
 		{/if}
 
-		{#if showCustomReason}
+		{#if $controllerState.fields?.reason?.value === 'custom'}
 			<div class="mb-4">
 				<label for="input-custom-reason" class="form-label">Reason why</label>
 				<input type="text" name="custom-reason" class="form-control" id="input-custom-reason" required>
