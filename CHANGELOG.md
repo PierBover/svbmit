@@ -1,3 +1,7 @@
+# 0.4.0
+
+Breaking changes everywhere. Big rewrite in progress.
+
 # 0.3.0
 
 New features:
