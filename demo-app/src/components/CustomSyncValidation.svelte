@@ -1,20 +1,18 @@
 <script>
-	import {controller, NativeValidationErrors, DisplayErrorsOn} from 'svbmit';
+	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
+	import {FormController, ValidationStates, NativeValidationErrors, ValidateOn} from 'svbmit';
 
 	const {VALUE_MISSING, TOO_SHORT} = NativeValidationErrors;
+	const {VALID} = ValidationStates;
 
-	let submittedValues;
+	let submittedValues, passwordIsValid, formController, form;
+	const formState = writable({});
+	const errors = writable({});
 
-	const displayedErrors = writable({});
-	const controllerState = writable(null);
-
-	const regexNumbers = /[0-9]/;
-	const regexUppercase = /[A-Z]/;
-
-	export function checkPassword (value) {
-		const testNumbers = regexNumbers.test(value);
-		const testUppercase = regexUppercase.test(value);
+	function checkPassword (value) {
+		const testNumbers = /[0-9]/.test(value);
+		const testUppercase = /[A-Z]/.test(value);
 
 		if (testNumbers && testUppercase) return true;
 		if (!testUppercase && !testNumbers) return 'Please include at least a number and an uppercase letter';
@@ -22,45 +20,49 @@
 		if (!testNumbers && testUppercase) return 'Please include at least a number';
 	}
 
-	const formControllerSettings = {
-		async onSubmit (values) {
-			submittedValues = values;
-		},
-		validClass: 'is-valid',
-		invalidClass: 'is-invalid',
-		displayedErrors,
-		controllerState,
-		displayErrorsOn: DisplayErrorsOn.INSTANT,
-		fields: {
-			password: {
-				validators: [checkPassword],
-				displayErrorsOnChange: true
+	onMount(() => {
+		formController = new FormController({
+			form,
+			formState,
+			errors,
+			validateOn: ValidateOn.INSTANT,
+			validClass: 'is-valid',
+			invalidClass: 'is-invalid',
+			onSubmit: (values) => {
+				submittedValues = values;
+			},
+			fields: {
+				password: {
+					validators: [checkPassword]
+				}
 			}
-		}
-	}
+		});
+	});
 
+	$: passwordIsValid = $formState.password?.validationState === VALID;
 </script>
 
 <div class="wrap">
 	<h1 class="mb-4">Custom sync validation</h1>
 
-	<form use:controller={formControllerSettings} class="mb-5" autocomplete="off">
+	<form bind:this={form} class="mb-5" autocomplete="off">
 		<div class="mb-3">
 			<label for="exampleInputPassword1" class="form-label">Password</label>
-			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="12">
+			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="12" maxlength="25">
 
-			{#if !$displayedErrors.password}
+			{#if passwordIsValid}
 				<div class="valid-feedback">Looking good!</div>
-			{:else if $displayedErrors.password === VALUE_MISSING}
+			{:else if $errors.password === VALUE_MISSING}
 				<div class="invalid-feedback">Please write a password</div>
-			{:else if $displayedErrors.password === TOO_SHORT}
+			{:else if $errors.password === TOO_SHORT}
 				<div class="invalid-feedback">Your password must be at least 12 characters long</div>
 			{:else}
-				<div class="invalid-feedback">{$displayedErrors.password}</div>
+				<div class="invalid-feedback">{$errors.password}</div>
 			{/if}
 
 		</div>
 		<button type="submit" class="btn btn-primary">Submit</button>
+
 	</form>
 
 	{#if submittedValues}
@@ -70,17 +72,10 @@
 		</pre>
 	{/if}
 
-	{#if $displayedErrors}
-		<h3>Displayed errors</h3>
+	{#if $formState}
+		<h3>Form state</h3>
 		<pre>
-			{JSON.stringify($displayedErrors, null, 2)}
-		</pre>
-	{/if}
-
-	{#if $controllerState}
-		<h3>Controller state</h3>
-		<pre>
-			{JSON.stringify($controllerState, null, 2)}
+			{JSON.stringify($formState, null, 2)}
 		</pre>
 	{/if}
 </div>

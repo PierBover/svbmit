@@ -1,13 +1,13 @@
 <script>
-	import {controller, NativeValidationErrors, ValidationStates} from 'svbmit';
+	import {svbmit, NativeValidationErrors, ValidationStates} from 'svbmit';
 	import {writable} from 'svelte/store';
 
 	const {VALID, INVALID, PENDING} = ValidationStates;
 
 	let submittedValues, passwordError, passwordValidationState;
 
-	const controllerState = writable(null);
-	const displayedErrors = writable(null);
+	const formState = writable({});
+	const errors = writable({});
 
 	const products = [
 		{
@@ -33,14 +33,14 @@
 		return true;
 	}
 
-	const formControllerSettings = {
+	const settings = {
 		async onSubmit (values) {
 			submittedValues = values;
 		},
 		validClass: 'is-valid',
 		invalidClass: 'is-invalid',
-		controllerState,
-		displayedErrors,
+		formState,
+		errors,
 		fields: {
 			product: {
 				validators: [isAllCaps],
@@ -54,13 +54,13 @@
 <div class="wrap">
 	<h1 class="mb-4">Dynamic form with custom validation</h1>
 
-	<form use:controller={formControllerSettings} class="mb-5" autocomplete="off">
+	<form use:svbmit={settings} class="mb-5" autocomplete="off">
 		{#each products as product}
 			<div class="mb-3">
 				<label for={'input-product-' + product.id} class="form-label">Name</label>
 				<input type="text" name={'product|' + product.id} class="form-control" id={'input-product-' + product.id} value={product.name} required>
-				{#if $displayedErrors?.[product.id]}
-					<div class="invalid-feedback">{$displayedErrors[product.id]}</div>
+				{#if $errors[product.id]}
+					<div class="invalid-feedback">{$errors[product.id]}</div>
 				{/if}
 			</div>
 		{/each}
@@ -74,17 +74,17 @@
 		</pre>
 	{/if}
 
-	{#if $displayedErrors}
+	{#if $errors}
 		<h3>Displayed errors</h3>
 		<pre>
-			{JSON.stringify($displayedErrors, null, 2)}
+			{JSON.stringify($errors, null, 2)}
 		</pre>
 	{/if}
 
-	{#if $controllerState}
-		<h3>Controller state</h3>
+	{#if $formState}
+		<h3>Form state</h3>
 		<pre>
-			{JSON.stringify($controllerState, null, 2)}
+			{JSON.stringify($formState, null, 2)}
 		</pre>
 	{/if}
 </div>

@@ -1,57 +1,48 @@
 <script>
-	import {controller, NativeValidationErrors, DisplayErrorsOn} from 'svbmit';
+	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
+	import {FormController, NativeValidationErrors} from 'svbmit';
 
 	const {VALUE_MISSING, TYPE_MISMATCH, TOO_SHORT} = NativeValidationErrors;
 
-	let submittedValues;
+	let submittedValues, form, formController;
+	const formState = writable({});
+	const errors = writable({});
 
-	const displayedErrors = writable({});
-	const controllerState = writable(null);
-
-	const settings = {
-		async onSubmit (values) {
-			submittedValues = values;
-		},
-		validClass: 'is-valid',
-		invalidClass: 'is-invalid',
-		displayedErrors,
-		controllerState,
-		displayErrorsOn: DisplayErrorsOn.INSTANT
-	}
+	onMount(() => {
+		formController = new FormController({
+			form,
+			formState,
+			errors,
+			validClass: 'is-valid',
+			invalidClass: 'is-invalid',
+			onSubmit: (values) => {
+				submittedValues = values;
+			}
+		});
+	});
 </script>
 
 <div class="wrap">
 	<h1 class="mb-4">Form with errors</h1>
 
-	<form use:controller={settings} class="mb-5" autocomplete="off">
+	<form bind:this={form} class="mb-5" autocomplete="off">
 		<div class="mb-3">
 			<label for="exampleInputEmail1" class="form-label">Email address</label>
 			<input type="email" name="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" required>
-			{#if $displayedErrors.email === VALUE_MISSING}
+			{#if $errors.email === VALUE_MISSING}
 				<div class="invalid-feedback">The email is required</div>
-			{:else if $displayedErrors.email === TYPE_MISMATCH}
+			{:else if $errors.email === TYPE_MISMATCH}
 				<div class="invalid-feedback">Please write a valid email</div>
-			{:else}
-				<div class="valid-feedback">Looks good!</div>
 			{/if}
 		</div>
 		<div class="mb-3">
 			<label for="exampleInputPassword1" class="form-label">Password</label>
 			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="5">
-			{#if $displayedErrors.password === VALUE_MISSING}
-			<div class="invalid-feedback">The password is required</div>
-			{:else if $displayedErrors.password === TOO_SHORT}
+			{#if $errors.password === VALUE_MISSING}
+				<div class="invalid-feedback">The password is required</div>
+			{:else if $errors.password === TOO_SHORT}
 				<div class="invalid-feedback">Password must be at least 5 characters long</div>
-			{:else}
-				<div class="valid-feedback">Looks good!</div>
-			{/if}
-		</div>
-		<div class="mb-3 form-check">
-			<input type="checkbox" name="accept" class="form-check-input" id="accept" required>
-			<label class="form-check-label" for="accept">I accept the terms and conditions</label>
-			{#if $displayedErrors.accept}
-				<div class="invalid-feedback">You must agree before submitting</div>
 			{/if}
 		</div>
 		<button type="submit" class="btn btn-primary">Submit</button>
@@ -64,19 +55,15 @@
 		</pre>
 	{/if}
 
-	{#if $displayedErrors}
-		<h3>Displayed errors</h3>
-		<pre>
-			{JSON.stringify($displayedErrors, null, 2)}
-		</pre>
-	{/if}
+	<h3>Errors</h3>
+	<pre>
+		{JSON.stringify($errors, null, 2)}
+	</pre>
 
-	{#if $controllerState}
-		<h3>Controller state</h3>
-		<pre>
-			{JSON.stringify($controllerState, null, 2)}
-		</pre>
-	{/if}
+	<h3>Form state</h3>
+	<pre>
+		{JSON.stringify($formState, null, 2)}
+	</pre>
 </div>
 
 <style>

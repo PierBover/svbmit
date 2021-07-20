@@ -1,11 +1,11 @@
 <script>
-	import {controller} from 'svbmit';
+	import {svbmit} from 'svbmit';
 	import {writable} from 'svelte/store';
 
 	let submittedValues;
 
-	const displayedErrors = writable({});
-	const controllerState = writable({});
+	const errors = writable({});
+	const formState = writable({});
 
 	const settings = {
 		async onSubmit (values) {
@@ -13,8 +13,8 @@
 		},
 		validClass: 'is-valid',
 		invalidClass: 'is-invalid',
-		displayedErrors,
-		controllerState
+		errors,
+		formState
 	}
 
 </script>
@@ -22,7 +22,7 @@
 <div class="wrap">
 	<h1 class="mb-4">Dynamic form</h1>
 
-	<form use:controller={settings} class="mb-5" autocomplete="off">
+	<form use:svbmit={settings} class="mb-5" autocomplete="off">
 		<div class="mb-4">
 			<h4 class="mb-2">Do you agree?</h4>
 			<div class="form-check">
@@ -35,7 +35,7 @@
 			</div>
 		</div>
 
-		{#if $controllerState.fields?.agree.value}
+		{#if $formState.fields?.agree.value}
 			<div class="mb-4">
 				<h4 class="mb-2">Why?</h4>
 				<select class="form-select" name="reason" required>
@@ -47,7 +47,7 @@
 			</div>
 		{/if}
 
-		{#if $controllerState.fields?.reason?.value === 'custom'}
+		{#if $formState.fields?.reason?.value === 'custom'}
 			<div class="mb-4">
 				<label for="input-custom-reason" class="form-label">Reason why</label>
 				<input type="text" name="custom-reason" class="form-control" id="input-custom-reason" required>
@@ -64,17 +64,17 @@
 		</pre>
 	{/if}
 
-	{#if $displayedErrors}
+	{#if $errors}
 		<h3>Displayed errors</h3>
 		<pre>
-			{JSON.stringify($displayedErrors, null, 2)}
+			{JSON.stringify($errors, null, 2)}
 		</pre>
 	{/if}
 
-	{#if $controllerState}
-		<h3>Controller state</h3>
+	{#if $formState}
+		<h3>Form state</h3>
 		<pre>
-			{JSON.stringify($controllerState, null, 2)}
+			{JSON.stringify($formState, null, 2)}
 		</pre>
 	{/if}
 </div>

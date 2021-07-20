@@ -1,5 +1,5 @@
 <script>
-	import {controller, NativeValidationErrors, ValidationStates} from 'svbmit';
+	import {svbmit, NativeValidationErrors, ValidationStates} from 'svbmit';
 	import {writable} from 'svelte/store';
 	import Cancelable from 'p-cancelable';
 
@@ -7,8 +7,8 @@
 
 	let submittedValues, passwordError, passwordIsValid;
 
-	const displayedErrors = writable(null);
-	const controllerState = writable(null);
+	const errors = writable({});
+	const formState = writable({});
 	let usernameError, usernameValidationState, isValidating;
 
 	let cancelable, cancelable_2;
@@ -83,14 +83,14 @@
 		}
 	}
 
-	const formControllerSettings = {
+	const settings = {
 		async onSubmit (values) {
 			submittedValues = values;
 		},
 		validClass: 'is-valid',
 		invalidClass: 'is-invalid',
-		displayedErrors,
-		controllerState,
+		errors,
+		formState,
 		hideErrorsOnInput: true,
 		fields: {
 			username: {
@@ -99,15 +99,15 @@
 		}
 	}
 
-	$: usernameError = $displayedErrors?.username || null;
-	$: usernameValidationState = $controllerState?.fields.username.validationState;
+	$: usernameError = $errors.username || null;
+	$: usernameValidationState = $formState.fields.username.validationState;
 
 </script>
 
 <div class="wrap">
 	<h1 class="mb-4">Async validation</h1>
 
-	<form use:controller={formControllerSettings} class="mb-5" autocomplete="off">
+	<form use:svbmit={settings} class="mb-5" autocomplete="off">
 		<div class="mb-3">
 			<label for="input-username" class="form-label">Username</label>
 			<input type="text" name="username" class="form-control" id="input-username">
@@ -132,17 +132,17 @@
 		</pre>
 	{/if}
 
-	{#if $displayedErrors}
+	{#if $errors}
 		<h3>Displayed errors</h3>
 		<pre>
-			{JSON.stringify($displayedErrors, null, 2)}
+			{JSON.stringify($errors, null, 2)}
 		</pre>
 	{/if}
 
-	{#if $controllerState}
-		<h3>Controller state</h3>
+	{#if $formState}
+		<h3>Form state</h3>
 		<pre>
-			{JSON.stringify($controllerState, null, 2)}
+			{JSON.stringify($formState, null, 2)}
 		</pre>
 	{/if}
 </div>

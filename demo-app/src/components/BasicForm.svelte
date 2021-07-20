@@ -1,27 +1,29 @@
 <script>
-	import {controller} from 'svbmit';
+	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
+	import {FormController} from 'svbmit';
 
-	let submittedValues;
+	let form, submittedValues, formController;
+	const formState = writable({});
 
-	const controllerState = writable(null);
+	onMount(() => {
 
-
-	const settings = {
-		async onSubmit (values) {
-			submittedValues = values;
-		},
-		validClass: 'is-valid',
-		invalidClass: 'is-invalid',
-		controllerState
-	}
-
+		formController = new FormController({
+			form,
+			formState,
+			validClass: 'is-valid',
+			invalidClass: 'is-invalid',
+			onSubmit: (values) => {
+				submittedValues = values;
+			}
+		});
+	});
 </script>
 
 <div class="wrap">
 	<h1 class="mb-4">Basic form</h1>
 
-	<form use:controller={settings} class="mb-5" autocomplete="off">
+	<form bind:this={form} class="mb-5" autocomplete="off">
 		<div class="mb-3">
 			<label for="input-email" class="form-label">Email address</label>
 			<input type="email" name="email" class="form-control" id="input-email" required>
@@ -44,12 +46,10 @@
 		</pre>
 	{/if}
 
-	{#if $controllerState}
-		<h3>Controller state</h3>
-		<pre>
-			{JSON.stringify($controllerState, null, 2)}
-		</pre>
-	{/if}
+	<h3>Form state</h3>
+	<pre>
+		{JSON.stringify($formState, null, 2)}
+	</pre>
 </div>
 
 <style>
