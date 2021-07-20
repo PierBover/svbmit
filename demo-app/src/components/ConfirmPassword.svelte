@@ -1,7 +1,7 @@
 <script>
 	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
-	import {FormController, controller, NativeValidationErrors, ValidateOn} from 'svbmit';
+	import {FormController, NativeValidationErrors, ValidateOn} from 'svbmit';
 
 	const {VALUE_MISSING, TOO_SHORT} = NativeValidationErrors;
 
