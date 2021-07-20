@@ -12,18 +12,39 @@ export function getFormInputElements (form) {
 	return inputs;
 }
 
+export function getInputElementsState (elements) {
+	if (elements.length === 1) {
+		return getInputElementState(elements[0]);
+	} else {
+		// this is just for radio groups
+		const states = elements.map((element) => getInputElementState(element));
+
+		const name = elements[0].name;
+		const type = elements[0].type;
+
+		let value = null;
+		let nativeError = null;
+
+		for (const state of states) {
+			if (state.value) value = state.value;
+			if (!nativeError && state.nativeError) nativeError = state.nativeError;
+		}
+
+		return {name, type, value, nativeError};
+
+	}
+}
+
 export function getInputElementState (input) {
-	let {name: inputName, type, value, checked} = input;
+	let {name, type, value, checked} = input;
 
 	switch (type) {
 		case InputTypes.CHECKBOX:
 			value = checked;
 		case InputTypes.RADIO:
-			if (!checked) value = '';
+			if (!checked) value = null;
 			break;
 	}
-
-	const name = inputName;
 
 	// const {name, alias} = parseInputName(inputName);
 

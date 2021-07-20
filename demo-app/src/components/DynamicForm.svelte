@@ -1,28 +1,31 @@
 <script>
-	import {svbmit} from 'svbmit';
+	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
+	import {FormController} from 'svbmit';
 
-	let submittedValues;
-
-	const errors = writable({});
+	let submittedValues, form, formController;
 	const formState = writable({});
+	const errors = writable({});
 
-	const settings = {
-		async onSubmit (values) {
-			submittedValues = values;
-		},
-		validClass: 'is-valid',
-		invalidClass: 'is-invalid',
-		errors,
-		formState
-	}
+	onMount(() => {
+		formController = new FormController({
+			form,
+			formState,
+			errors,
+			validClass: 'is-valid',
+			invalidClass: 'is-invalid',
+			onSubmit: (values) => {
+				submittedValues = values;
+			}
+		});
+	});
 
 </script>
 
 <div class="wrap">
 	<h1 class="mb-4">Dynamic form</h1>
 
-	<form use:svbmit={settings} class="mb-5" autocomplete="off">
+	<form bind:this={form} class="mb-5" autocomplete="off">
 		<div class="mb-4">
 			<h4 class="mb-2">Do you agree?</h4>
 			<div class="form-check">
@@ -35,7 +38,7 @@
 			</div>
 		</div>
 
-		{#if $formState.fields?.agree.value}
+		{#if $formState.agree?.value}
 			<div class="mb-4">
 				<h4 class="mb-2">Why?</h4>
 				<select class="form-select" name="reason" required>
@@ -47,7 +50,7 @@
 			</div>
 		{/if}
 
-		{#if $formState.fields?.reason?.value === 'custom'}
+		{#if $formState.reason?.value === 'custom'}
 			<div class="mb-4">
 				<label for="input-custom-reason" class="form-label">Reason why</label>
 				<input type="text" name="custom-reason" class="form-control" id="input-custom-reason" required>

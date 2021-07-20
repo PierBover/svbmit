@@ -1,5 +1,4 @@
-import {writable} from 'svelte/store';
-import {ValidationStates, ValidateOn, FieldTypes, FormStates, FormEvents} from './enums/index.js';
+import {ValidationStates, ValidateOn, FieldTypes, FormStates, FormEvents, InputTypes} from './enums/index.js';
 import {getFormInputElements, getValueOrDefault} from './utils/index.js';
 import HtmlField from './HtmlField.js';
 import GroupField from './GroupField.js';
@@ -42,6 +41,10 @@ export default class FormController {
 
 		this.formElement.addEventListener('submit', this.onSubmitEvent);
 
+		// DOM Mutation Observer
+		this.observer = new MutationObserver(this.onDOMMutation.bind(this));
+		this.observer.observe(this.formElement, {attributes: false, childList: true, subtree: true});
+
 		this.updateFieldsFromDom();
 		this.stores.formState = config.formState;
 		this.stores.errors = config.errors;
@@ -61,6 +64,13 @@ export default class FormController {
 			this.formSubmitState = FormStates.SUBMITTED;
 			this.settings.onSubmitCallback(this.getFormValues());
 		}
+	}
+
+	onDOMMutation (event) {
+		window.requestAnimationFrame(() => {
+			this.updateFieldsFromDom();
+			this.updateFormState();
+		})
 	}
 
 	// STATE
@@ -185,14 +195,40 @@ export default class FormController {
 	updateFieldsFromDom () {
 		const inputElements = getFormInputElements(this.formElement);
 
+		const radioGroups = {};
+
+		// Get all radio groups
+
+		inputElements.forEach((element) => {
+			if (element.type === InputTypes.RADIO) {
+				const name = element.name;
+
+				if (!radioGroups[name]) {
+					radioGroups[name] = [element];
+				} else {
+					radioGroups[name].push(element);
+				}
+			}
+		});
+
 		inputElements.forEach((element) => {
 
-			const field = this.getFieldByName(element.name);
+			let elements;
 
+			if (element.type === InputTypes.RADIO) {
+				let group = radioGroups[element.name];
+				if (!group) return;
+				elements = group;
+				group = null;
+			} else {
+				elements = [element];
+			}
+
+			const field = this.getFieldByName(elements[0].name);
 
 			if (field && field.type === FieldTypes.HTML) {
 				// If the field already exists, just update the element
-				field.updateElement(element);
+				field.updateElements(elements);
 			} else {
 				// If not, create a new field and use config settings (if any)
 				let settings = this.fieldsSettings.find((settings) => settings.name === element.name);
@@ -208,7 +244,7 @@ export default class FormController {
 					};
 				}
 
-				settings.element = element;
+				settings.elements = elements;
 
 				this.fields.push(new HtmlField(settings));
 			}

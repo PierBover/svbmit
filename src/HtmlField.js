@@ -1,5 +1,5 @@
 import {FieldTypes, ValidationStates, ValidateOn, FormInputEvents, InputTypes, FormEvents} from './enums/index.js';
-import {getInputElementState} from './utils/index.js';
+import {getInputElementsState} from './utils/index.js';
 import FormField from './FormField.js';
 
 const {HTML} = FieldTypes;
@@ -10,56 +10,65 @@ export default class HtmlField extends FormField {
 
 		super(settings);
 
+		this.elements = [];
+		this.type = HTML;
+
 		// Bind handler
 		this.onEvent = this.onEvent.bind(this);
 
-		// this.groupValidationState = PENDING;
-
-		this.type = HTML;
-
-		if (settings.element) {
-			this.element = settings.element;
-			this.initFieldFromElement();
+		if (settings.elements) {
+			this.elements.push(...settings.elements);
+			this.initFieldFromElements();
 		} else {
 			this.isOrphan = true;
 		}
 	}
 
-	updateElement (element) {
+	updateElements (elements) {
 		this.isOrphan = false;
-		this.element = element;
-		this.initFieldFromElement();
+		this.elements = elements;
+		this.initFieldFromElements();
 	}
 
-	initFieldFromElement () {
-		this.elementType = this.element.type;
-		const {name, value} = getInputElementState(this.element);
+	initFieldFromElements () {
+
+		const {name, value, type} = getInputElementsState(this.elements);
 		this.name = name;
 		this.value = value;
-		this.addEventListeners();
+		this.elementType = type;
+
+		for (const element of this.elements) {
+			this.addEventListenersToElement(element);
+		}
 	}
 
-	addEventListeners () {
-		this.element.addEventListener('input', this.onEvent);
-		this.element.addEventListener('focus', this.onEvent);
-		this.element.addEventListener('blur', this.onEvent);
+	addEventListenersToElement (element) {
+		element.addEventListener('input', this.onEvent);
+
+		if (this.elementType !== InputTypes.RADIO) {
+			element.addEventListener('focus', this.onEvent);
+			element.addEventListener('blur', this.onEvent);
+		}
 	}
 
-	removeEventListeners () {
-		this.element.removeEventListener('input', this.onEvent);
-		this.element.removeEventListener('blur', this.onEvent);
-		this.element.removeEventListener('focus', this.onEvent);
+	removeEventListenersFromElement (element) {
+		element.removeEventListener('input', this.onEvent);
+
+		if (this.elementType !== InputTypes.RADIO) {
+			element.removeEventListener('blur', this.onEvent);
+			element.removeEventListener('focus', this.onEvent);
+		}
 	}
 
 	updateValue () {
-		const {value} = getInputElementState(this.element);
+		const {value} = getInputElementsState(this.elements);
 		this.value = value;
 	}
 
 	validate () {
 
 		// Native browser validation
-		const {nativeError} = getInputElementState(this.element);
+		const {nativeError} = getInputElementsState(this.elements);
 
 		if (nativeError) {
 			this.error = nativeError;
@@ -102,7 +111,7 @@ export default class HtmlField extends FormField {
 	setCssClass (validationState) {
 
 		const {validClass, invalidClass, addValidClassToAllInputs} = this.controller.settings;
-		this.element.classList.remove(validClass, invalidClass);
+		for (const element of this.elements) element.classList.remove(validClass, invalidClass);
 
 		if (!validationState || validationState === PENDING) return;
 
@@ -110,7 +119,7 @@ export default class HtmlField extends FormField {
 			validationState === INVALID &&
 			invalidClass
 		) {
-			this.element.classList.add(invalidClass);
+			for (const element of this.elements) element.classList.add(invalidClass);
 			return;
 		}
 
@@ -127,8 +136,7 @@ export default class HtmlField extends FormField {
 				)
 			)
 		) {
-			this.element.classList.add(validClass);
-			return;
+			for (const element of this.elements) element.classList.add(validClass);
 		}
 	}
 }
