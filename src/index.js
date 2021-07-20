@@ -1,2 +1,3 @@
 export {default as controller} from './actions/controller.js';
-export {InputTypes, NativeValidationErrors, ValidationStates, DisplayErrorsOn} from './enums/index.js';
+export {default as FormController} from './FormController.js';
+export {InputTypes, NativeValidationErrors, ValidationStates, ValidateOn, FieldTypes, FormStates} from './enums/index.js';

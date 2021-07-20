@@ -24,8 +24,35 @@ export const ValidationStates = {
 	PENDING: 'PENDING'
 }
 
-export const DisplayErrorsOn = {
+export const FormStates = {
+	UNSUBMITTED: 'UNSUBMITTED',
+	SUBMITTED: 'SUBMITTED'
+}
+
+export const ValidateOn = {
 	INSTANT: 'INSTANT',
 	SUBMIT: 'SUBMIT',
-	BLUR: 'BLUR'
+	BLUR: 'BLUR',
+	INSTANT_AFTER_SUBMIT: 'INSTANT_AFTER_SUBMIT'
+}
+
+export const FormEvents = {
+	INPUT: 'INPUT',
+	SUBMIT: 'SUBMIT',
+	BLUR: 'BLUR',
+	FOCUS: 'FOCUS',
+	INIT: 'INIT'
+}
+
+export const FormInputEvents = {
+	INPUT: 'input',
+	FOCUS: 'focus',
+	BLUR: 'blur'
+}
+
+export const FieldTypes = {
+	HTML: 'HTML',
+	VIRTUAL: 'VIRTUAL',
+	CUSTOM: 'CUSTOM',
+	GROUP: 'GROUP'
 }

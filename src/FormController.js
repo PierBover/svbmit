@@ -1,488 +1,246 @@
-import {InputTypes, NativeValidationErrors, ValidationStates, DisplayErrorsOn} from './enums/index.js';
+import {writable} from 'svelte/store';
+import {ValidationStates, ValidateOn, FieldTypes, FormStates, FormEvents} from './enums/index.js';
+import {getFormInputElements, getValueOrDefault} from './utils/index.js';
+import HtmlField from './HtmlField.js';
+import GroupField from './GroupField.js';
 
 const {VALID, INVALID, PENDING} = ValidationStates;
+const {INSTANT_AFTER_SUBMIT} = ValidateOn;
 
 export default class FormController {
 	constructor (config) {
 
-		if (!config.onSubmit) throw 'You need to add an onSubmit callback';
+		this.stores = {};
+		this.fields = [];
 
-		this.controllerState = {
-			form: {
-				validationState: ValidationStates.PENDING,
-			},
-			fields: {}
-		};
-
-		this.displayedErrors = {};
-
-		this.trackedInputs = [];
+		this.formSubmitState = FormStates.UNSUBMITTED;
+		this.formValidationState = PENDING;
 
 		// Bind handlers
-		this.onSubmit = this.onSubmit.bind(this);
-		this.onInput = this.onInput.bind(this);
-		this.onBlur = this.onBlur.bind(this);
-		this.onFocus = this.onFocus.bind(this);
+		this.onSubmitEvent = this.onSubmitEvent.bind(this);
 
 		// Settings
 		this.settings = {};
-		this.settings.fields = config.fields ? config.fields : {};
-		this.settings.onSubmit = config.onSubmit;
+		this.settings.errorMessages = config.errorMessages || {};
+		this.settings.onSubmitCallback = config.onSubmit;
 		this.settings.useNativeErrorTooltips = getValueOrDefault(config.useNativeErrorTooltips, false);
 		this.settings.validClass = getValueOrDefault(config.validClass, 'valid');
 		this.settings.invalidClass = getValueOrDefault(config.invalidClass, 'invalid');
-		this.settings.displayErrorsOn = getValueOrDefault(config.displayErrorsOn, DisplayErrorsOn.SUBMIT);
+		this.settings.validateOn = getValueOrDefault(config.validateOn, INSTANT_AFTER_SUBMIT);
+		this.settings.clearErrorsOnInput = getValueOrDefault(config.clearErrorsOnInput, true);
 		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, false);
 		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, false);
-		this.settings.errorMessages = config.errorMessages || {};
 
-		this.form = config.form;
-		this.form.addEventListener('submit', this.onSubmit);
+		this.initFieldsSettings(config.fields || {});
+		this.initFields();
+
+		// Init form
+		this.formElement = config.form;
+
 		// Disable native error tooltips
-		if (!this.settings.useNativeErrorTooltips) this.form.setAttribute('novalidate', true);
+		if (!this.settings.useNativeErrorTooltips) this.formElement.setAttribute('novalidate', true);
 
-		// DOM Mutation Observer
-		this.observer = new MutationObserver(this.onDOMMutation.bind(this));
-		this.observer.observe(this.form, {attributes: false, childList: true, subtree: true});
+		this.formElement.addEventListener('submit', this.onSubmitEvent);
 
-		// stores
-		this.stores = {};
-		this.stores.displayedErrors = config.displayedErrors;
-		this.stores.controllerState = config.controllerState;
-
-		this.initInputs();
-		this.updateControllerState();
-		this.updateStores();
+		this.updateFieldsFromDom();
+		this.stores.formState = config.formState;
+		this.stores.errors = config.errors;
+		this.updateFormState();
 	}
 
-	addListenersToInput (input) {
-		input.addEventListener('input', this.onInput);
-		// input.addEventListener('change', this.onInput);
-		input.addEventListener('blur', this.onBlur);
-		input.addEventListener('focus', this.onFocus);
+	destroy () {}
+
+	onSubmitEvent (event) {
+
+		event.preventDefault();
+
+		this.validateAllFields();
+		this.updateFormState();
+
+		if (this.formValidationState === VALID) {
+			this.formSubmitState = FormStates.SUBMITTED;
+			this.settings.onSubmitCallback(this.getFormValues());
+		}
 	}
 
-	removeListenersFromInput (input) {
-		input.removeEventListener('input', this.onInput);
-		// input.removeEventListener('change', this.onInput);
-		input.removeEventListener('blur', this.onBlur);
-		input.removeEventListener('focus', this.onFocus);
+	// STATE
+
+	getFormState () {
+		const state = {
+			state: this.formSubmitState,
+			validationState: this.formValidationState,
+			touched: false
+		}
+
+		this.fields
+		// Get the group fields value last
+		.sort((field) => {
+			if (field.type === FieldTypes.GROUP) return -1;
+			return 1
+		})
+		.forEach((field) => {
+			if (!field.isOrphan) {
+				const fieldState = field.getState();
+				state[field.name] = fieldState;
+			}
+
+			if (field.touched) state.touched = true;
+		});
+
+		return state;
 	}
 
-	destroy () {
-		this.observer.disconnect();
-		this.form.removeEventListener('submit', this.onSubmit);
-		const inputs = getFormInputElements(this.form);
-		inputs.forEach((input) => this.removeListenersFromInput(input));
+	getDisplayedErrors () {
+		const errors = {};
+
+		this.fields.forEach((field) => {
+			if (!field.isOrphan && field.displayError && field.error) errors[field.name] = field.error;
+		});
+
+		return errors;
 	}
 
-	updateDisplayedErrors () {
-		let displayedErrors = {};
+	updateFormValidationState () {
+		let newValidationState = VALID;
 
-		Object.keys(this.controllerState.fields).forEach((name) => {
-
-			const field = this.controllerState.fields[name];
-
-			if (field.displayError && field.validationState === INVALID) {
-				if (!displayedErrors) displayedErrors = {};
-				displayedErrors[name] = field.error;
+		this.fields.forEach((field) => {
+			// If the form has been set to invalid we don't need to check any other fields
+			if (newValidationState !== INVALID) {
+				if (field.validationState !== VALID) newValidationState = field.validationState;
 			}
 		});
 
-		this.displayedErrors = displayedErrors;
+		this.formValidationState = newValidationState;
+	}
+
+	updateFormState () {
+		this.updateFormValidationState();
+		this.updateStores();
 	}
 
 	updateStores () {
-		if (this.stores.controllerState) {
-			const controllerState = JSON.parse(JSON.stringify(this.controllerState));
-
-			// remove unnecessary stuff
-			Object.keys(controllerState.fields).forEach((name) => {
-				const field = controllerState.fields[name];
-				if (field.name === field.alias) delete field.alias;
-			});
-
-			this.stores.controllerState.set(controllerState);
+		if (this.stores.formState) {
+			const formState = this.getFormState();
+			this.stores.formState.set(formState);
 		}
 
-		if (this.stores.displayedErrors) this.stores.displayedErrors.set(this.displayedErrors);
+		if (this.stores.errors) this.stores.errors.set(this.getFormErrors());
 	}
 
-	triggerOnSubmit () {
-		const values = getValuesFromState(this.controllerState);
-		this.settings.onSubmit(values);
-		this.updateStores();
+	getFormErrors (formState) {
+		const errors = {};
+
+		this.fields.forEach((field) => {
+			if (field.error) errors[field.name] = field.error;
+		});
+
+		return errors;
 	}
 
-	onDOMMutation (event) {
-		window.requestAnimationFrame(() => {
-			this.initInputs();
+	// FIELDS
+
+	initFieldsSettings (fieldsSettings) {
+		this.fieldsSettings = Object.keys(fieldsSettings).map((name) => {
+
+			const settings = fieldsSettings[name];
+
+			settings.name = name;
+			settings.type = FieldTypes.HTML;
+			settings.controller = this;
+
+			if (!settings.validateOn) settings.validateOn = this.settings.validateOn;
+
+			if (settings.fields) {
+				settings.type = FieldTypes.GROUP;
+			}
+
+			return settings;
+		});
+	}
+
+	// Init the fields in the settings config
+
+	initFields() {
+		const groups = [];
+
+		this.fieldsSettings.forEach((settings) => {
+
+			switch (settings.type) {
+				case FieldTypes.HTML:
+					settings.parentGroupField = this.getParentGroupField(settings.name);
+					this.fields.push(new HtmlField(settings));
+					break;
+				case FieldTypes.GROUP:
+					this.fields.push(new GroupField(settings));
+					break;
+			}
+		});
+	}
+
+	getFieldByName (name) {
+		return this.fields.find((field) => field.name === name);
+	}
+
+	// Create or update fields for each form element
+	updateFieldsFromDom () {
+		const inputElements = getFormInputElements(this.formElement);
+
+		inputElements.forEach((element) => {
+
+			const field = this.getFieldByName(element.name);
+
+
+			if (field && field.type === FieldTypes.HTML) {
+				// If the field already exists, just update the element
+				field.updateElement(element);
+			} else {
+				// If not, create a new field and use config settings (if any)
+				let settings = this.fieldsSettings.find((settings) => settings.name === element.name);
+
+				// If there are no settings for this field, create blank settings
+				if (!settings) {
+					settings = {
+						name: element.name,
+						type: FieldTypes.HTML,
+						controller: this,
+						validateOn: this.settings.validateOn,
+						parentGroupField: this.getParentGroupField(element.name)
+					};
+				}
+
+				settings.element = element;
+
+				this.fields.push(new HtmlField(settings));
+			}
+		});
+	}
+
+	getParentGroupField (childName) {
+		for (let i = 0; i < this.fields.length; i++) {
+			const field = this.fields[i];
+			if (field.type === FieldTypes.GROUP && field.fields.indexOf(childName) !== -1) return field;
+		}
+	}
+
+	validateAllFields () {
+		this.fields
+		// Validate the group fields value last
+		.sort((field) => {
+			if (field.type === FieldTypes.GROUP) return -1;
+			return 1
 		})
+		.forEach((field) => {
+			field.onEvent({type: FormEvents.SUBMIT});
+		});
 	}
 
-	initInputs () {
-		if (this.trackedInputs.length > 0) {
-			this.trackedInputs.forEach((input) => {
-				this.removeListenersFromInput(input);
-			});
+	getFormValues () {
+		const values = {};
 
-			this.trackedInputs = [];
-		}
-
-		// init inputs and field state
-		const inputs = getFormInputElements(this.form);
-
-		inputs.forEach((input) => {
-			this.addListenersToInput(input);
-			const {name, alias} = parseInputName(input.name);
-
-			if (!this.controllerState.fields[name]) {
-				const fieldState = this.getFieldStateFromInput(input);
-				fieldState.dirty = false;
-				this.updateFieldState(name, fieldState);
-			}
-
-			this.trackedInputs.push(input);
+		this.fields.forEach((field) => {
+			values[field.name] = field.value
 		});
 
-		this.updateControllerState();
-		this.updateStores();
+		return values;
 	}
-
-	// ------------------------------------------------
-	//
-	// STATE
-	//
-	// ------------------------------------------------
-
-	updateControllerState () {
-		const controllerState = this.controllerState;
-
-		let formValidationState = ValidationStates.PENDING;
-
-		// Add field state to controllerState
-		Object.keys(controllerState.fields).forEach((fieldName) => {
-			const field = controllerState.fields[fieldName];
-
-			// Set the form validation state
-			switch (field.validationState) {
-				case ValidationStates.INVALID:
-					formValidationState = ValidationStates.INVALID;
-					break;
-				case ValidationStates.VALID:
-					if (formValidationState === ValidationStates.PENDING) {
-						formValidationState = ValidationStates.VALID;
-					}
-					break;
-			}
-		});
-
-		controllerState.form.validationState = formValidationState;
-
-		this.controllerState = controllerState;
-	}
-
-	updateFieldState (name, updateState) {
-		const previousState = this.controllerState.fields[name] || {};
-		const newState = Object.assign(previousState, updateState);
-
-		// Add custom error messages
-		if (newState.error && this.settings.errorMessages[newState.error]) {
-			newState.error = this.settings.errorMessages[newState.error];
-		}
-
-		this.controllerState.fields[name] = newState;
-	}
-
-	getFieldStateFromInput (input) {
-		const inputState = getInputState(input);
-		const {name, value, type, nativeError, alias} = inputState;
-		const fieldState = {name, value, type, alias};
-		const fieldSettings = this.settings.fields[alias] || {};
-
-		// External validation overrides all other validations
-		if (fieldSettings.externalValidator) {
-			fieldState.validationState = PENDING;
-			return fieldState;
-		}
-
-		if (nativeError) {
-			fieldState.validationState = INVALID;
-			fieldState.error = nativeError;
-			return fieldState;
-		}
-
-		if (fieldSettings.validators) {
-			const result = validateValueWithValidators(value, fieldSettings.validators, this.controllerState);
-
-			if (result !== true) {
-				fieldState.validationState = INVALID;
-				fieldState.error = result;
-				return fieldState;
-			}
-		}
-
-		fieldState.validationState = VALID;
-		fieldState.error = '';
-		return fieldState;
-	}
-
-	// ------------------------------------------------
-	//
-	// EVENT HANDLERS
-	//
-	// ------------------------------------------------
-
-	async onSubmit (event) {
-		event.preventDefault();
-		event.stopPropagation();
-
-		const inputs = getFormInputElements(this.form);
-
-		// Show errors of all invalid fields and trigger external validation
-		Object.keys(this.controllerState.fields).forEach((name) => {
-			const field = this.controllerState.fields[name];
-			const fieldSettings = this.settings.fields[field.alias] || {};
-
-			field.dirty = true;
-
-			if (fieldSettings.externalValidator) this.triggerExternalValidationForField(name, event);
-			else field.displayError = true;
-		});
-
-		this.updateControllerState();
-		this.updateDisplayedErrors();
-		this.updateCSSClassesForAllInputs();
-		this.updateStores();
-
-		if (this.controllerState.form.validationState === ValidationStates.VALID) this.triggerOnSubmit();
-	}
-
-	onInput (event) {
-		const {name, alias} = parseInputName(event.target.name);
-		const fieldSettings = this.settings.fields[alias] || {};
-		const fieldState = this.getFieldStateFromInput(event.target);
-
-		const isInvalid = fieldState.validationState === INVALID;
-		const hasExternalValidator = typeof fieldSettings.externalValidator !== 'undefined';
-
-		if (!hasExternalValidator) {
-			const displayErrorOn = fieldSettings.displayErrorsOn || this.settings.displayErrorsOn;
-			const hideErrorsOnChange = this.settings.hideErrorsOnChange;
-
-			if (hideErrorsOnChange) fieldState.displayError = false;
-			else if (displayErrorOn === DisplayErrorsOn.INSTANT) fieldState.displayError = true;
-		}
-
-		fieldState.dirty = true;
-
-		this.updateFieldState(name, fieldState);
-		this.updateControllerState();
-		this.updateDisplayedErrors();
-		this.updateCSSClassesForAllInputs();
-		this.updateStores();
-
-		if (hasExternalValidator) {
-			this.triggerExternalValidationForField(name, event);
-		}
-	}
-
-	onBlur (event) {
-		const {name, alias} = parseInputName(event.target.name);
-		const fieldSettings = this.settings.fields[alias] || {};
-		const fieldState = this.getFieldStateFromInput(event.target);
-		const hasExternalValidator = typeof fieldSettings.externalValidator !== 'undefined';
-
-		if (
-			!hasExternalValidator &&
-			this.settings.displayErrorsOn === DisplayErrorsOn.BLUR
-		) {
-			fieldState.displayError = true;
-		}
-
-		this.updateFieldState(name, fieldState);
-		this.updateControllerState();
-		this.updateDisplayedErrors();
-		this.updateCSSClassesForAllInputs();
-		this.updateStores();
-
-
-		if (hasExternalValidator) {
-			this.triggerExternalValidationForField(name, event);
-		}
-	}
-
-	onFocus (event) {
-		const {name, alias} = parseInputName(event.target.name);
-		const fieldSettings = this.settings.fields[alias] || {};
-		const hasExternalValidator = typeof fieldSettings.externalValidator !== 'undefined';
-
-		if (hasExternalValidator) {
-			this.triggerExternalValidationForField(alias, event);
-		}
-	}
-
-	// ------------------------------------------------
-	//
-	// VALIDATION
-	//
-	// ------------------------------------------------
-
-	// We need the name in case of a submit event which is not related to any input
-
-	triggerExternalValidationForField (name, event) {
-		const fieldState = this.controllerState.fields[name];
-		const fieldSettings = this.settings.fields[fieldState.alias || name];
-
-		const update = (updateState) => {
-			fieldState.validationState = updateState.validationState;
-			fieldState.error = updateState.error || null;
-			fieldState.displayError = updateState.displayError;
-
-			this.updateFieldState(name, fieldState);
-			this.updateControllerState();
-			this.updateDisplayedErrors();
-			this.updateCSSClassesForAllInputs();
-			this.updateStores();
-
-			if (this.controllerState.form.validationState === ValidationStates.VALID) {
-				this.triggerOnSubmit();
-			}
-		}
-
-		fieldSettings.externalValidator(fieldState, event.type, update);
-	}
-
-	updateInputCSSClasses (input) {
-		input.classList.remove(this.settings.validClass, this.settings.invalidClass);
-
-		const {name} = parseInputName(input.name);
-		const field = this.controllerState.fields[name];
-		const displayError = this.displayedErrors[name];
-
-		if (
-			field.validationState === VALID &&
-			field.dirty &&
-			this.settings.validClass &&
-			(
-				this.settings.addValidClassToAllInputs ||
-				(
-					field.type !== InputTypes.CHECKBOX &&
-					field.type !== InputTypes.RADIO &&
-					field.type !== InputTypes.SELECT &&
-					field.type !== InputTypes.SELECT_MULTIPLE
-				)
-			)
-		) {
-			input.classList.add(this.settings.validClass);
-		}
-
-		if (
-			displayError &&
-			field.validationState === INVALID &&
-			this.settings.invalidClass
-		) {
-			input.classList.add(this.settings.invalidClass);
-		}
-	}
-
-	updateCSSClassesForAllInputs () {
-		const inputs = getFormInputElements(this.form);
-		inputs.forEach((input) => this.updateInputCSSClasses(input));
-	}
-}
-
-// ------------------------------------------------
-//
-// UTILS
-//
-// ------------------------------------------------
-
-function getValuesFromState (state) {
-	const values = {};
-
-	Object.keys(state.fields).map((name) => {
-		values[name] = state.fields[name].value;
-	});
-
-	return values;
-}
-
-function getFormInputElements (form) {
-	const htmlCollection = form.elements;
-	const inputs = [];
-
-	for (var i = 0; i < htmlCollection.length; i++) {
-		if (htmlCollection[i].type === InputTypes.SUBMIT) continue;
-		inputs.push(htmlCollection[i]);
-	}
-
-	return inputs;
-}
-
-function getInputState (input) {
-	let {name: inputName, type, value, checked} = input;
-
-	switch (type) {
-		case InputTypes.CHECKBOX:
-			value = checked;
-		case InputTypes.RADIO:
-			if (!checked) value = '';
-			break;
-	}
-
-	const {name, alias} = parseInputName(inputName);
-
-	const inputState = {name, value, type, alias};
-
-	if (!input.validity.valid) {
-		inputState.nativeError = getErrorFromValidity(input.validity);
-	}
-
-	return inputState;
-}
-
-function getErrorFromValidity (validity) {
-	if (validity.valueMissing) return NativeValidationErrors.VALUE_MISSING;
-	if (validity.typeMismatch) return NativeValidationErrors.TYPE_MISMATCH;
-	if (validity.badInput) return NativeValidationErrors.BAD_INPUT;
-	if (validity.patternMismatch) return NativeValidationErrors.PATTERN_MISMATCH;
-	if (validity.rangeOverflow) return NativeValidationErrors.RANGE_OVERFLOW;
-	if (validity.rangeUnderflow) return NativeValidationErrors.RANGE_UNDERFLOW;
-	if (validity.stepMismatch) return NativeValidationErrors.STEP_MISMATCH;
-	if (validity.tooLong) return NativeValidationErrors.TOO_LONG;
-	if (validity.tooShort) return NativeValidationErrors.TOO_SHORT;
-
-	throw 'Unknown native validation error';
-}
-
-function getValueOrDefault (value, defaultValue) {
-	if (typeof value !== 'undefined') return value;
-	else return defaultValue;
-}
-
-function validateValueWithValidators (value, validators, controllerState) {
-	for (const validator of validators) {
-
-		if (validator.then) {
-			throw `Custom sync validators can't return a promise`;
-		}
-
-		const result = validator(value, controllerState);
-
-		if (result !== true) return result;
-	}
-
-	return true;
-}
-
-function parseInputName (name) {
-	if (!name.includes('|')) return {name, alias: name};
-
-	const split = name.split('|');
-
-	return {
-		alias: split[0],
-		name: split[1]
-	};
 }
