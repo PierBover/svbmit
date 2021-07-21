@@ -27,6 +27,8 @@ export default class HtmlField {
 
 	onEvent (event) {
 
+		if (this.isOrphan) return;
+
 		this.updateValue();
 
 		switch (event.type) {

@@ -114,6 +114,8 @@ export default class FormController {
 		let newValidationState = VALID;
 
 		this.fields.forEach((field) => {
+			// Ignore orphan fields
+			if (field.isOrphan) return;
 			// If the form has been set to invalid we don't need to check any other fields
 			if (newValidationState !== INVALID) {
 				if (field.validationState !== VALID) newValidationState = field.validationState;

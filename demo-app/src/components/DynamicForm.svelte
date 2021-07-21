@@ -1,11 +1,21 @@
 <script>
 	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
-	import {FormController} from 'svbmit';
+	import {FormController, NativeValidationErrors, ValidateOn} from 'svbmit';
 
-	let submittedValues, form, formController;
+	const {VALUE_MISSING} = NativeValidationErrors;
+	const {INSTANT} = ValidateOn;
+
+	let submittedValues, form, formController, scaleIsValid, scaleHasValue;
 	const formState = writable({});
 	const errors = writable({});
+
+	function checkScale (value) {
+		const testNumbers = /[0-9]/.test(value);
+		if (!testNumbers) return 'Please use only numbers';
+		if (value < 1 || value > 10) return 'Pease use a number between 1 and 10';
+		return true;
+	}
 
 	onMount(() => {
 		formController = new FormController({
@@ -16,9 +26,22 @@
 			invalidClass: 'is-invalid',
 			onSubmit: (values) => {
 				submittedValues = values;
+			},
+			fields: {
+				'scale-agree': {
+					validators: [checkScale],
+					validateOn: INSTANT
+				},
+				'scale-disagree': {
+					validators: [checkScale],
+					validateOn: INSTANT
+				}
 			}
 		});
 	});
+
+	$: scaleHasValue = $formState['scale-agree']?.value || $formState['scale-disagree']?.value;
+	$: scaleIsValid = !$errors['scale-agree'] && !$errors['scale-disagree'];
 
 </script>
 
@@ -38,7 +61,33 @@
 			</div>
 		</div>
 
-		{#if $formState.agree?.value}
+		{#if $formState.agree?.value === 'yes'}
+			<div class="mb-4">
+				<h4 class="mb-2">How much do you agree?</h4>
+				<label for="input-scale-agree" class="form-label">Use a number from 1 to 10</label>
+				<input type="text" name="scale-agree" class="form-control" id="input-scale-agree" required>
+				{#if $errors['scale-agree'] === VALUE_MISSING}
+					<div class="invalid-feedback">Please enter a value</div>
+				{:else if $errors['scale-agree']}
+					<div class="invalid-feedback">{$errors['scale-agree']}</div>
+				{/if}
+			</div>
+		{/if}
+
+		{#if $formState.agree?.value === 'no'}
+			<div class="mb-4">
+				<h4 class="mb-2">How much do you disagree?</h4>
+				<label for="input-scale-disagree" class="form-label">Use a number from 1 to 10</label>
+				<input type="text" name="scale-disagree" class="form-control" id="input-scale-disagree" required>
+				{#if $errors['scale-disagree'] === VALUE_MISSING}
+					<div class="invalid-feedback">Please enter a value</div>
+				{:else if $errors['scale-disagree']}
+					<div class="invalid-feedback">{$errors['scale-disagree']}</div>
+				{/if}
+			</div>
+		{/if}
+
+		{#if scaleHasValue && scaleIsValid}
 			<div class="mb-4">
 				<h4 class="mb-2">Why?</h4>
 				<select class="form-select" name="reason" required>
