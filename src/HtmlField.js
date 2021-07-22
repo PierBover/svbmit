@@ -65,34 +65,32 @@ export default class HtmlField extends FormField {
 		this.value = value;
 	}
 
-	validate () {
+	getValidationState () {
 
 		// Native browser validation
 		const {nativeError} = getInputElementsState(this.elements);
 
 		if (nativeError) {
-			this.error = nativeError;
-			this.validationState = INVALID;
-			this.setCssClass(INVALID);
-			return;
+			return {
+				error: nativeError,
+				state: INVALID
+			};
 		}
 
 		// Custom validation
 		const result = this.customValidate();
 
 		if (result !== true) {
-			this.error = result;
-			this.validationState = INVALID;
-			this.setCssClass(INVALID);
-			return;
+			return {
+				error: result,
+				state: INVALID
+			};
 		}
 
-		this.error = null;
-		this.validationState = VALID;
-		if (!this.isGroupChild) this.setCssClass(VALID);
-		else  this.setCssClass(null);
-
-		if (this.isGroupChild) this.parentGroupField.validate();
+		return {
+			error: null,
+			state: VALID
+		};
 	}
 
 	getState () {

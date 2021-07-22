@@ -1,11 +1,11 @@
 <script>
 	import {onMount} from 'svelte';
 	import {writable} from 'svelte/store';
-	import {FormController, NativeValidationErrors} from 'svbmit';
+	import {FormController, NativeValidationErrors, ValidateOn} from 'svbmit';
 
 	const {VALUE_MISSING, TYPE_MISMATCH, TOO_SHORT} = NativeValidationErrors;
 
-	let submittedValues, form, formController;
+	let submittedValues, form, formController, passwordCharacters = 0;
 	const formState = writable({});
 	const errors = writable({});
 
@@ -18,9 +18,12 @@
 			invalidClass: 'is-invalid',
 			onSubmit: (values) => {
 				submittedValues = values;
-			}
+			},
+			validateOn: ValidateOn.INSTANT_VALID
 		});
 	});
+
+	$: passwordCharacters = $formState.password?.value ? $formState.password?.value.length : 0;
 </script>
 
 <div class="wrap">
@@ -36,7 +39,10 @@
 				<div class="invalid-feedback">Please write a valid email</div>
 			{/if}
 		</div>
-		<div class="mb-3">
+		<div class="mb-3 position-relative">
+			{#if passwordCharacters > 0 && passwordCharacters < 5}
+				<small class="text-muted position-absolute top-0 end-0">{5 - passwordCharacters} more characters</small>
+			{/if}
 			<label for="exampleInputPassword1" class="form-label">Password</label>
 			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="5">
 			{#if $errors.password === VALUE_MISSING}

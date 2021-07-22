@@ -29,6 +29,7 @@ export default class FormController {
 		this.settings.clearErrorsOnInput = getValueOrDefault(config.clearErrorsOnInput, true);
 		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, false);
 		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, false);
+		this.settings.instantValidationTimeout = getValueOrDefault(config.instantValidationTimeout, 250);
 
 		this.initFieldsSettings(config.fields || {});
 		this.initFields();

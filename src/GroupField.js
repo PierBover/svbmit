@@ -38,7 +38,7 @@ export default class GroupField extends FormField {
 		this.validationState = PENDING;
 	}
 
-	validate () {
+	getValidationState () {
 
 		// First check all fields in the group are VALID
 		// otherwise the validation of the whole group will be PENDING
@@ -46,9 +46,10 @@ export default class GroupField extends FormField {
 
 		for (const field of fields) {
 			if (field.validationState !== VALID) {
-				this.error = null;
-				this.validationState = PENDING;
-				return;
+				return {
+					error: null,
+					state: PENDING
+				};
 			}
 		}
 
@@ -56,15 +57,16 @@ export default class GroupField extends FormField {
 		const result = this.customValidate();
 
 		if (result !== true) {
-			this.error = result;
-			this.validationState = INVALID;
-			this.setCssClassToGroupFields(INVALID);
-			return;
+			return {
+				error: result,
+				state: INVALID
+			};
 		}
 
-		this.error = null;
-		this.validationState = VALID;
-		this.setCssClassToGroupFields(VALID);
+		return {
+			error: null,
+			state: VALID
+		};
 	}
 
 	setCssClassToGroupFields (validationState) {
@@ -88,39 +90,6 @@ export default class GroupField extends FormField {
 		}
 
 		return true;
-	}
-
-	updateValidationState () {
-		// If there's an error it's invalid
-		if (this.error) {
-			this.validationState = INVALID;
-		} else {
-			this.validationState = VALID;
-		}
-
-		// if (this.isGroupChild) {
-		// 	this.groupValidationState = this.parentGroupField.validationState;
-		// }
-
-		// if (this.type === GROUP) {
-
-		// 	const childFields = this.fields.map((name) => this.controller.getFieldByName(name));
-
-		// 	childFields.forEach((childField) => {
-		// 		if (
-		// 			this.validationState === VALID &&
-		// 			childField.validationState === INVALID
-		// 		) {
-		// 			this.validationState = INVALID;
-		// 		}
-		// 	});
-
-		// 	childFields.forEach((childField) => {
-		// 		childField.groupValidationState = this.validationState;
-		// 		childField.displayError = this.displayError;
-		// 		childField.updateCssClasses();
-		// 	});
-		// }
 	}
 
 	getState () {

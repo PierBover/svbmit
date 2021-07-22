@@ -3,7 +3,7 @@ import {getInputElementState} from './utils/index.js';
 
 const {HTML, VIRTUAL, CUSTOM, GROUP} = FieldTypes;
 const {PENDING, VALID, INVALID} = ValidationStates;
-const {INSTANT, BLUR, INSTANT_AFTER_SUBMIT} = ValidateOn;
+const {INSTANT, BLUR, INSTANT_AFTER_SUBMIT, INSTANT_VALID} = ValidateOn;
 
 export default class HtmlField {
 	constructor (settings) {
@@ -30,22 +30,30 @@ export default class HtmlField {
 		if (this.isOrphan) return;
 
 		this.updateValue();
+		this.clearValidation();
 
 		switch (event.type) {
 			case FormInputEvents.INPUT:
 				this.touched = true;
-				if (this.validateOn === INSTANT) this.validate();
-				else if (this.hasSubmitted && this.validateOn === INSTANT_AFTER_SUBMIT) this.validate();
-				else this.clearValidation();
+
+				if (
+					this.validateOn === INSTANT ||
+					(this.hasSubmitted && this.validateOn === INSTANT_AFTER_SUBMIT)
+				) {
+					this.updateValidationState();
+				} else if (this.validateOn === INSTANT_VALID) {
+					const {state, error} = this.getValidationState();
+					if (state === VALID) this.setValidationState({state, error});
+				}
 				break;
 			case FormInputEvents.BLUR:
-				if (this.validateOn === BLUR || this.validateOn === INSTANT) this.validate();
+				if (this.validateOn === BLUR || this.validateOn === INSTANT) this.updateValidationState();
 				break;
 			case FormInputEvents.FOCUS:
 				break;
 			case FormEvents.SUBMIT:
 				this.hasSubmitted = true;
-				this.validate();
+				this.updateValidationState();
 				break;
 		}
 
@@ -58,12 +66,34 @@ export default class HtmlField {
 
 	// Methods to be overriden by sub classes
 	updateValue () {}
-	validate () {}
+	getValidationState () {}
 	getState () {}
+	setCssClassToGroupFields () {}
+
+
+	updateValidationState () {
+		const state = this.getValidationState();
+		this.setValidationState(state);
+	}
+
+	setValidationState ({state, error}) {
+		this.error = error;
+		this.validationState = state;
+
+		if (this.type === HTML) {
+			// If the field is group child and valid remove the css class so that
+			// it can bet set by the group field
+			if (this.isGroupChild && state === VALID) this.setCssClass(null);
+			else this.setCssClass(state);
+
+			if (this.isGroupChild) this.parentGroupField.updateValidationState();
+		}
+
+		if (this.type === GROUP && state !== PENDING) this.setCssClassToGroupFields(state);
+	}
 
 	clearValidation () {
-		this.error = null;
-		this.validationState = PENDING;
+		this.setValidationState({state: PENDING, error: null});
 	}
 
 	customValidate () {
@@ -80,14 +110,5 @@ export default class HtmlField {
 		}
 
 		return true;
-	}
-
-	updateValidationState () {
-		// If there's an error it's invalid
-		if (this.error) {
-			this.validationState = INVALID;
-		} else {
-			this.validationState = VALID;
-		}
 	}
 }
