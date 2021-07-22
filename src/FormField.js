@@ -29,12 +29,11 @@ export default class HtmlField {
 
 		if (this.isOrphan) return;
 
-		this.updateValue();
-		this.clearValidation();
-
 		switch (event.type) {
 			case FormInputEvents.INPUT:
 				this.touched = true;
+				this.updateValue();
+				this.clearValidation();
 
 				if (
 					this.validateOn === INSTANT ||
@@ -47,7 +46,10 @@ export default class HtmlField {
 				}
 				break;
 			case FormInputEvents.BLUR:
-				if (this.validateOn === BLUR || this.validateOn === INSTANT) this.updateValidationState();
+				if (
+					this.validationState !== VALID &&
+					(this.validateOn === BLUR || this.validateOn === INSTANT)
+				) this.updateValidationState();
 				break;
 			case FormInputEvents.FOCUS:
 				break;

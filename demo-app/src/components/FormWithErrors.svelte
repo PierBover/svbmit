@@ -40,15 +40,20 @@
 			{/if}
 		</div>
 		<div class="mb-3 position-relative">
-			{#if passwordCharacters > 0 && passwordCharacters < 5}
-				<small class="text-muted position-absolute top-0 end-0">{5 - passwordCharacters} more characters</small>
-			{/if}
 			<label for="exampleInputPassword1" class="form-label">Password</label>
-			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="5">
+			<input type="password" name="password" class="form-control" id="exampleInputPassword1" required minlength="12">
 			{#if $errors.password === VALUE_MISSING}
 				<div class="invalid-feedback">The password is required</div>
 			{:else if $errors.password === TOO_SHORT}
-				<div class="invalid-feedback">Password must be at least 5 characters long</div>
+				<div class="invalid-feedback">Password must be at least 12 characters long</div>
+			{:else if !$errors.password}
+				{#if passwordCharacters === 0}
+					<div class="form-text">Password must be at least 12 characters long</div>
+				{:else if passwordCharacters < 12}
+					<div class="form-text">Still {12 - passwordCharacters} more characters</div>
+				{:else}
+					<div class="valid-feedback">You're good!</div>
+				{/if}
 			{/if}
 		</div>
 		<button type="submit" class="btn btn-primary">Submit</button>
