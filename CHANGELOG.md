@@ -1,3 +1,8 @@
+# 0.5.0
+
+* Re-added support for dyanmic forms.
+* New `INSTANT_VALID` validation mode.
+
 # 0.4.0
 
 Breaking changes everywhere. Big rewrite in progress.
