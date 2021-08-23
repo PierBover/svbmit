@@ -41,6 +41,16 @@ export function getInputElementState (input) {
 	switch (type) {
 		case InputTypes.CHECKBOX:
 			value = checked;
+			break;
+		case InputTypes.FILE:
+			const files = [];
+
+			for (let index = 0; index < input.files.length; index++) {
+				files.push(input.files[index]);
+			}
+
+			value = files;
+			break;
 		case InputTypes.RADIO:
 			if (!checked) value = null;
 			break;

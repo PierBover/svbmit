@@ -3,7 +3,8 @@ export const InputTypes = {
 	CHECKBOX: 'checkbox',
 	RADIO: 'radio',
 	SELECT: 'select',
-	SELECT_MULTIPLE: 'select-multiple'
+	SELECT_MULTIPLE: 'select-multiple',
+	FILE: 'file'
 }
 
 export const NativeValidationErrors = {

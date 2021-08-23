@@ -11,4 +11,5 @@
 	<a href="/dynamic-form" use:link use:active>Dynamic form</a>
 	<!-- <a href="/dynamic-form-validation" use:link use:active>Dynamic form with custom validation</a> -->
 	<a href="/age-validation" use:link use:active>Age validation</a>
+	<a href="/file-input" use:link use:active>File input</a>
 </div>
