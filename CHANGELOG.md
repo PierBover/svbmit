@@ -1,3 +1,7 @@
+# 0.6.0
+
+* Added support for file inputs
+
 # 0.5.0
 
 * Re-added support for dyanmic forms.
