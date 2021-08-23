@@ -1,3 +1,7 @@
+# 0.6.1
+
+* Added `multiple` support for file inputs
+
 # 0.6.0
 
 * Added support for file inputs
