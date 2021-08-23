@@ -27,7 +27,7 @@
 	<form bind:this={form} class="mb-5" autocomplete="off">
 		<div class="mb-3">
 			<label for="input-files" class="form-label">Files to upload</label>
-			<input type="file" name="files" class="form-control" id="input-files" required>
+			<input type="file" name="file" class="form-control" id="input-files" required>
 		</div>
 		<button type="submit" class="btn btn-primary">Submit</button>
 	</form>
