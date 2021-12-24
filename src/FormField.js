@@ -1,11 +1,10 @@
-import {FieldTypes, ValidationStates, ValidateOn, FormInputEvents, InputTypes, FormEvents} from './enums/index.js';
-import {getInputElementState} from './utils/index.js';
+import {FieldTypes, ValidationStates, ValidateOn, FormInputEvents, FormEvents} from './enums/index.js';
 
 const {HTML, VIRTUAL, CUSTOM, GROUP} = FieldTypes;
 const {PENDING, VALID, INVALID} = ValidationStates;
 const {INSTANT, BLUR, INSTANT_AFTER_SUBMIT, INSTANT_VALID} = ValidateOn;
 
-export default class HtmlField {
+export default class FormField {
 	constructor (settings) {
 		this.validationState = PENDING;
 

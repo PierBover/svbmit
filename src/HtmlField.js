@@ -1,4 +1,4 @@
-import {FieldTypes, ValidationStates, ValidateOn, FormInputEvents, InputTypes, FormEvents} from './enums/index.js';
+import {FieldTypes, ValidationStates, InputTypes} from './enums/index.js';
 import {getInputElementsState} from './utils/index.js';
 import FormField from './FormField.js';
 
