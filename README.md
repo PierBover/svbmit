@@ -19,11 +19,3 @@ npm i svbmit
 ```
 
 Svbmit is undergoing a heavy rewrite so I have decided to remove the docs until the API is more stable and more features are added.
-
-If you're curious, you can check the code of the [demo app](demo-app/src/components) where all features are being used:
-
-* Dynamic forms
-* Cross field validation (eg: confirm password)
-* Group field validation (eg: age validation of multiple fields)
-* How to implement async validation
-* File inputs
