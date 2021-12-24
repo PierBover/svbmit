@@ -6,7 +6,7 @@ import GroupField from './GroupField.js';
 const {VALID, INVALID, PENDING} = ValidationStates;
 const {INSTANT_AFTER_SUBMIT} = ValidateOn;
 
-export default class FormController {
+export default class ValidationController {
 
 	static defaultSettings = {
 		useNativeErrorTooltips: false,
@@ -37,13 +37,13 @@ export default class FormController {
 		// Settings
 		this.settings = {};
 		this.settings.onSubmitCallback = config.onSubmit;
-		this.settings.useNativeErrorTooltips = getValueOrDefault(config.useNativeErrorTooltips, FormController.defaultSettings.useNativeErrorTooltips);
-		this.settings.validClass = getValueOrDefault(config.validClass, FormController.defaultSettings.validClass);
-		this.settings.invalidClass = getValueOrDefault(config.invalidClass, FormController.defaultSettings.invalidClass);
-		this.settings.validateOn = getValueOrDefault(config.validateOn, FormController.defaultSettings.validateOn);
+		this.settings.useNativeErrorTooltips = getValueOrDefault(config.useNativeErrorTooltips, ValidationController.defaultSettings.useNativeErrorTooltips);
+		this.settings.validClass = getValueOrDefault(config.validClass, ValidationController.defaultSettings.validClass);
+		this.settings.invalidClass = getValueOrDefault(config.invalidClass, ValidationController.defaultSettings.invalidClass);
+		this.settings.validateOn = getValueOrDefault(config.validateOn, ValidationController.defaultSettings.validateOn);
 		// Setting to force valid class on checkboxes, radio buttons, and selects
-		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, FormController.defaultSettings.addValidClassToAllInputs);
-		this.settings.removeValidationClassesOnSubmit = getValueOrDefault(config.removeValidationClassesOnSubmit, FormController.defaultSettings.removeValidationClassesOnSubmit);
+		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, ValidationController.defaultSettings.addValidClassToAllInputs);
+		this.settings.removeValidationClassesOnSubmit = getValueOrDefault(config.removeValidationClassesOnSubmit, ValidationController.defaultSettings.removeValidationClassesOnSubmit);
 		
 		this.initFieldsSettings(config.fields || {});
 		this.initFields();
@@ -215,7 +215,7 @@ export default class FormController {
 		
 		const radioGroups = {};
 		
-		// Get all radio groups
+		// Get all radio inputs and put them in a group
 		
 		inputElements.forEach((element) => {
 			if (element.type === InputTypes.RADIO) {
@@ -234,10 +234,8 @@ export default class FormController {
 			let elements;
 			
 			if (element.type === InputTypes.RADIO) {
-				let group = radioGroups[element.name];
-				if (!group) return;
-				elements = group;
-				group = null;
+				elements = radioGroups[element.name];
+				if (!elements) return;
 			} else {
 				elements = [element];
 			}
@@ -266,6 +264,24 @@ export default class FormController {
 				
 				this.fields.push(new HtmlField(settings));
 			}
+		});
+
+		// Delete orphaned fields from removing HTML elements was removed
+		this.removeOrphannedFields();
+
+	}
+
+	removeOrphannedFields () {
+		this.fields = this.fields.filter((field) => {
+			if (field instanceof HtmlField) {
+				// Check if all the elements of the field are present in the DOM
+				// There could be more than one element because of radio groups
+				for (let i = 0; i < field.elements.length; i++) {
+					if (!document.body.contains(field.elements[i]))	return false;
+				}
+			}
+
+			return field;
 		});
 	}
 	
