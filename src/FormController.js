@@ -30,6 +30,7 @@ export default class FormController {
 		this.settings.hideErrorsOnChange = getValueOrDefault(config.hideErrorsOnChange, false);
 		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, false);
 		this.settings.instantValidationTimeout = getValueOrDefault(config.instantValidationTimeout, 250);
+		this.settings.removeValidationClassesOnSubmit = getValueOrDefault(config.removeValidationClassesOnSubmit, true);
 
 		this.initFieldsSettings(config.fields || {});
 		this.initFields();
@@ -62,6 +63,7 @@ export default class FormController {
 		this.updateFormState();
 
 		if (this.formValidationState === VALID) {
+			if (this.settings.removeValidationClassesOnSubmit) this.removeCssClassesFromFields();
 			this.formSubmitState = FormStates.SUBMITTED;
 			this.settings.onSubmitCallback(this.getFormValues());
 		}
@@ -270,6 +272,12 @@ export default class FormController {
 		})
 		.forEach((field) => {
 			field.onEvent({type: FormEvents.SUBMIT});
+		});
+	}
+
+	removeCssClassesFromFields () {
+		this.fields.forEach((field) => {
+			field.setCssClass(null);
 		});
 	}
 
