@@ -1,3 +1,7 @@
+# 0.7.0
+
+* Added `removeValidationClassesOnSubmit` option
+
 # 0.6.1
 
 * Added `multiple` support for file inputs
