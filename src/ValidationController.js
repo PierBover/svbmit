@@ -14,7 +14,8 @@ export default class ValidationController {
 		invalidClass: 'invalid',
 		validateOn: INSTANT_AFTER_SUBMIT,
 		addValidClassToAllInputs: false,
-		removeValidationClassesOnSubmit: true
+		removeValidationClassesOnSubmit: true,
+		aliasAttributeName: 'data-alias'
 	};
 
 	static setDefaultSettings (settings) {
@@ -44,9 +45,10 @@ export default class ValidationController {
 		// Setting to force valid class on checkboxes, radio buttons, and selects
 		this.settings.addValidClassToAllInputs = getValueOrDefault(config.addValidClassToAllInputs, ValidationController.defaultSettings.addValidClassToAllInputs);
 		this.settings.removeValidationClassesOnSubmit = getValueOrDefault(config.removeValidationClassesOnSubmit, ValidationController.defaultSettings.removeValidationClassesOnSubmit);
+		this.settings.aliasAttributeName = getValueOrDefault(config.aliasAttributeName, ValidationController.defaultSettings.aliasAttributeName);
 		
 		this.initFieldsSettings(config.fields || {});
-		this.initFields();
+		this.initGroupFields();
 		
 		// Init form
 		this.formElement = config.form;
@@ -76,7 +78,7 @@ export default class ValidationController {
 		this.updateFormState();
 		
 		if (this.formValidationState === VALID) {
-			if (this.settings.removeValidationClassesOnSubmit) this.removeCssClassesFromFields();
+			if (this.settings.removeValidationClassesOnSubmit) this.removeCssClassesFromHtmlInputs();
 			this.formSubmitState = FormStates.SUBMITTED;
 			this.settings.onSubmitCallback(this.getFormValues());
 		}
@@ -167,40 +169,32 @@ export default class ValidationController {
 	
 	// FIELDS
 	
+	// Init the fields' settings
+
 	initFieldsSettings (fieldsSettings) {
 		this.fieldsSettings = Object.keys(fieldsSettings).map((name) => {
 			
 			const settings = fieldsSettings[name];
 			
 			settings.name = name;
-			settings.type = FieldTypes.HTML;
 			settings.controller = this;
 			
 			if (!settings.validateOn) settings.validateOn = this.settings.validateOn;
 			
 			if (settings.fields) {
 				settings.type = FieldTypes.GROUP;
+			} else {
+				settings.type = FieldTypes.HTML;
 			}
 			
 			return settings;
 		});
 	}
 	
-	// Init the fields in the settings config
-	
-	initFields() {
-		const groups = [];
-		
+	initGroupFields() {		
 		this.fieldsSettings.forEach((settings) => {
-			
-			switch (settings.type) {
-				case FieldTypes.HTML:
-				settings.parentGroupField = this.getParentGroupField(settings.name);
-				this.fields.push(new HtmlField(settings));
-				break;
-				case FieldTypes.GROUP:
+			if (settings.type === FieldTypes.GROUP) {
 				this.fields.push(new GroupField(settings));
-				break;
 			}
 		});
 	}
@@ -210,6 +204,7 @@ export default class ValidationController {
 	}
 	
 	// Create or update fields for each form element
+	
 	updateFieldsFromDom () {
 		const inputElements = getFormInputElements(this.formElement);
 		
@@ -241,13 +236,13 @@ export default class ValidationController {
 			}
 			
 			const field = this.getFieldByName(elements[0].name);
-			
-			if (field && field.type === FieldTypes.HTML) {
-				// If the field already exists, just update the element
+
+			// If the field already exists, just update the element
+			if (field && field.type === FieldTypes.HTML) {				
 				field.updateElements(elements);
 			} else {
 				// If not, create a new field and use config settings (if any)
-				let settings = this.fieldsSettings.find((settings) => settings.name === element.name);
+				let settings = this.getSettingsForInput(elements[0]);
 				
 				// If there are no settings for this field, create blank settings
 				if (!settings) {
@@ -266,9 +261,20 @@ export default class ValidationController {
 			}
 		});
 
-		// Delete orphaned fields from removing HTML elements was removed
+		// Delete orphaned fields after removing HTML elements from the DOM
 		this.removeOrphannedFields();
 
+	}
+
+	getSettingsForInput (element) {
+
+		const alias = element.getAttribute(this.settings.aliasAttributeName);
+
+		if (alias) {
+			return this.fieldsSettings.find((settings) => settings.name === alias);
+		} else {
+			return this.fieldsSettings.find((settings) => settings.name === element.name);
+		}		
 	}
 
 	removeOrphannedFields () {
@@ -304,9 +310,9 @@ export default class ValidationController {
 		});
 	}
 	
-	removeCssClassesFromFields () {
+	removeCssClassesFromHtmlInputs () {
 		this.fields.forEach((field) => {
-			field.setCssClass(null);
+			if (field instanceof HtmlField) field.removeCssClasses();
 		});
 	}
 	

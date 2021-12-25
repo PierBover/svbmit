@@ -45,10 +45,9 @@ export default class FormField {
 				}
 				break;
 			case FormInputEvents.BLUR:
-				if (
-					this.validationState !== VALID &&
-					(this.validateOn === BLUR || this.validateOn === INSTANT)
-				) this.updateValidationState();
+				if (this.validationState !== VALID && this.validateOn === BLUR) {
+					this.updateValidationState();
+				}
 				break;
 			case FormInputEvents.FOCUS:
 				break;
@@ -69,7 +68,6 @@ export default class FormField {
 	updateValue () {}
 	getValidationState () {}
 	getState () {}
-	setCssClassToGroupFields () {}
 
 
 	updateValidationState () {
@@ -85,7 +83,7 @@ export default class FormField {
 			// If the field is group child and valid remove the css class so that
 			// it can bet set by the group field
 			if (this.isGroupChild && state === VALID) this.setCssClass(null);
-			else this.setCssClass(state);
+			else this.setCssClassFromValidationState(state);
 
 			if (this.isGroupChild) this.parentGroupField.updateValidationState();
 		}

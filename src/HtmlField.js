@@ -106,10 +106,10 @@ export default class HtmlField extends FormField {
 		return state;
 	}
 
-	setCssClass (validationState) {
-
+	setCssClassFromValidationState (validationState) {
 		const {validClass, invalidClass, addValidClassToAllInputs} = this.controller.settings;
-		for (const element of this.elements) element.classList.remove(validClass, invalidClass);
+
+		this.removeCssClasses();
 
 		if (!validationState || validationState === PENDING) return;
 
@@ -117,7 +117,7 @@ export default class HtmlField extends FormField {
 			validationState === INVALID &&
 			invalidClass
 		) {
-			for (const element of this.elements) element.classList.add(invalidClass);
+			this.setCssClass(invalidClass);
 			return;
 		}
 
@@ -134,7 +134,16 @@ export default class HtmlField extends FormField {
 				)
 			)
 		) {
-			for (const element of this.elements) element.classList.add(validClass);
+			this.setCssClass(validClass);
 		}
+	}
+
+	removeCssClasses () {
+		const {validClass, invalidClass} = this.controller.settings;
+		for (const element of this.elements) element.classList.remove(validClass, invalidClass);
+	}
+
+	setCssClass (className) {
+		for (const element of this.elements) element.classList.add(className);
 	}
 }
